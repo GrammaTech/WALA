@@ -168,6 +168,15 @@ public class Slicer {
    * 
    * @throws CancelException
    */
+  public static Collection<Statement> computeForwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException, CancelException {
+    return computeSlice(sdg, ss, false);
+  }
+  
+  /**
+   * Use the passed-in SDG
+   * 
+   * @throws CancelException
+   */
   public static Collection<Statement> computeBackwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException,
       CancelException {
     return computeSlice(sdg, ss, true);
