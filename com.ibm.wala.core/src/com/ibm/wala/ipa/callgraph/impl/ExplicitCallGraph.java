@@ -144,6 +144,7 @@ public class ExplicitCallGraph extends BasicCallGraph<SSAContextInterpreter> imp
     
     private WeakReference<IR> ir = new WeakReference<IR>(null);
     private WeakReference<DefUse> du = new WeakReference<DefUse>(null);
+    private Integer hashCode = null;
 
     /**
      * @param method
@@ -284,8 +285,11 @@ public class ExplicitCallGraph extends BasicCallGraph<SSAContextInterpreter> imp
 
     @Override
     public int hashCode() {
-      // TODO: cache?
-      return getMethod().hashCode() * 8681 + getContext().hashCode();
+      // cache on first call
+      if (hashCode == null) {
+        hashCode = getMethod().hashCode() * 8681 + getContext().hashCode();
+      }
+      return hashCode;
     }
 
     protected MutableSharedBitVectorIntSet getAllTargetNumbers() {
