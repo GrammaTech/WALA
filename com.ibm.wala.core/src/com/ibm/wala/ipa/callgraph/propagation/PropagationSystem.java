@@ -423,11 +423,15 @@ public class PropagationSystem extends DefaultFixedPointSolver<PointsToSetVariab
       // a no-op
       return false;
     } else {
+      // when analyzing inner-classes, seems like references are
+      // sometimes null
+      if(value.getConcreteType() == null){
+          return false;
+      }
+
       L.add(index);
 
       // also register that we have an instanceKey for the klass
-      assert value.getConcreteType() != null;
-
       if (!value.getConcreteType().getReference().equals(TypeReference.JavaLangObject)) {
         registerInstanceOfClass(value.getConcreteType(), index);
       }
