@@ -1,9 +1,10 @@
 package com.ibm.wala.util.config;
 
-import com.ibm.wala.util.debug.UnimplementedError;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+
+import com.ibm.wala.util.debug.UnimplementedError;
 
 /**
  * Supports the abstraction of multiple sets of classes to allow both exclusions and "negative
@@ -26,24 +27,24 @@ import java.util.Collection;
  */
 public class SetOfSetsOfClasses extends SetOfClasses implements Serializable {
 
-    public static enum Kind {
-        INCL_ONLY,
-        EXCL_ONLY,
-        INCL_OVERRIDE_EXCL
-    }
+  public static enum Kind {
+    INCL_ONLY,
+    EXCL_ONLY,
+    INCL_OVERRIDE_EXCL
+  }
 
-    private Kind kind;
+  private Kind kind;
 
   private Collection<SetOfClasses> sets = new ArrayList<SetOfClasses>();
   
-    public SetOfSetsOfClasses(Kind kind) {
-        this.kind = kind;
-    }
+  public SetOfSetsOfClasses(Kind kind) {
+    this.kind = kind;
+  }
 
-    public SetOfSetsOfClasses(Collection<SetOfClasses> sets, Kind kind) {
-        this.sets.addAll(sets);
-        this.kind = kind;
-    }
+  public SetOfSetsOfClasses(Collection<SetOfClasses> sets, Kind kind) {
+    this.sets.addAll(sets);
+    this.kind = kind;
+  }
   
   public void addSet(SetOfClasses set) {
     this.sets.add(set);
@@ -51,27 +52,26 @@ public class SetOfSetsOfClasses extends SetOfClasses implements Serializable {
   
   @Override
   public boolean contains(String klassName) {
-        boolean isExcluded = false;
-        boolean isIncluded = false;
-        for (SetOfClasses set : sets) {
-            if ((set instanceof ExplicitSetOfClasses)
-                    && ((ExplicitSetOfClasses) set).isInverted()) { // inclusion
-                if (!set.contains(klassName)) {
-                    isIncluded = true;
-                }
-            } else { // exclusion
-                if (set.contains(klassName)) {
-                    isExcluded = true;
-                }
-            }
+    boolean isExcluded = false;
+    boolean isIncluded = false;
+    for (SetOfClasses set : sets) {
+      if ((set instanceof ExplicitSetOfClasses) && ((ExplicitSetOfClasses) set).isInverted()) { // inclusion
+        if (!set.contains(klassName)) {
+          isIncluded = true;
         }
-        if (kind == Kind.INCL_ONLY) {
-            return !isIncluded;
-        } else if (kind == Kind.EXCL_ONLY) {
-            return isExcluded;
-        } else { // kind is INCL_OVERRIDE_EXCL
-            return isExcluded && !isIncluded;
+      } else { // exclusion
+        if (set.contains(klassName)) {
+          isExcluded = true;
         }
+      }
+    }
+    if (kind == Kind.INCL_ONLY) {
+      return !isIncluded;
+    } else if (kind == Kind.EXCL_ONLY) {
+      return isExcluded;
+    } else { // kind is INCL_OVERRIDE_EXCL
+      return isExcluded && !isIncluded;
+    }
   }
 
   @Override

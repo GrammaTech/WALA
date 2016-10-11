@@ -10,6 +10,21 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.callgraph;
 
+import java.io.File;
+import java.io.NotSerializableException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+
 import com.ibm.wala.classLoader.ArrayClassLoader;
 import com.ibm.wala.classLoader.BinaryDirectoryTreeModule;
 import com.ibm.wala.classLoader.ClassFileModule;
@@ -34,20 +49,7 @@ import com.ibm.wala.util.config.SetOfClasses;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.strings.Atom;
 import com.ibm.wala.util.strings.ImmutableByteArray;
-import java.io.File;
-import java.io.NotSerializableException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
+
 
 /**
  * Base class that represents a set of files to analyze.
@@ -144,12 +146,14 @@ public class AnalysisScope {
     return loader.getReference().equals(getLoader(APPLICATION));
   }
 
-    public boolean isApplicationClass(IClass klass) {
-        return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
-    }
+  public boolean isApplicationClass(IClass klass) {
+    return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
+  }
 
-    /** Return the information regarding the primordial loader. */
-    public ClassLoaderReference getPrimordialLoader() {
+  /** 
+   * Return the information regarding the primordial loader.
+   * */
+  public ClassLoaderReference getPrimordialLoader() {
     return getLoader(PRIMORDIAL);
   }
 
