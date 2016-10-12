@@ -30,7 +30,7 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import com.ibm.wala.util.config.ExplicitSetOfClasses;
 import com.ibm.wala.util.config.FileOfClasses;
-import com.ibm.wala.util.config.SetOfSetsOfClasses;
+import com.ibm.wala.util.config.ExclusionSpecification;
 import com.ibm.wala.util.io.FileProvider;
 import com.ibm.wala.util.strings.StringStuff;
 
@@ -51,10 +51,10 @@ public class ExclusionsTest {
         ExclusionsTest.class.getClassLoader());
     TypeReference buttonRef = TypeReference.findOrCreate(ClassLoaderReference.Application,
         StringStuff.deployment2CanonicalTypeString("java.awt.Button"));
-    SetOfSetsOfClasses exclusions = new SetOfSetsOfClasses(SetOfSetsOfClasses.Kind.INCL_ONLY);
+    ExclusionSpecification exclusions = new ExclusionSpecification(ExclusionSpecification.Kind.INCL_ONLY);
     Collection<String> inclusions = new HashSet<String>();
     inclusions.add("java/awt/Button");
-    exclusions.addSet(new ExplicitSetOfClasses(inclusions, true, false));
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions));
     scope.setExclusions(exclusions);
     assertFalse(scope.getExclusions().contains(buttonRef.getName().toString().substring(1)));
     }
@@ -65,14 +65,14 @@ public class ExclusionsTest {
         ExclusionsTest.class.getClassLoader());
     TypeReference buttonRef = TypeReference.findOrCreate(ClassLoaderReference.Application,
         StringStuff.deployment2CanonicalTypeString("java.awt.Button"));
-    SetOfSetsOfClasses exclusions =
-        new SetOfSetsOfClasses(SetOfSetsOfClasses.Kind.INCL_OVERRIDE_EXCL);
+    ExclusionSpecification exclusions =
+        new ExclusionSpecification(ExclusionSpecification.Kind.INCL_OVERRIDE_EXCL);
     InputStream exclusionStream =
         new FileInputStream((new FileProvider()).getFile("GUIExclusions.txt"));
-    exclusions.addSet(new FileOfClasses(exclusionStream));
+    exclusions.addExclusionSet(new FileOfClasses(exclusionStream));
     Collection<String> inclusions = new HashSet<String>();
     inclusions.add("java/awt/Button");
-    exclusions.addSet(new ExplicitSetOfClasses(inclusions, true, false));
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions));
     scope.setExclusions(exclusions);
     assertFalse(scope.getExclusions().contains(buttonRef.getName().toString().substring(1)));
     }
@@ -83,62 +83,75 @@ public class ExclusionsTest {
         ExclusionsTest.class.getClassLoader());
      TypeReference buttonRef = TypeReference.findOrCreate(ClassLoaderReference.Application,
         StringStuff.deployment2CanonicalTypeString("java.awt.Button"));
-    SetOfSetsOfClasses exclusions = new SetOfSetsOfClasses(SetOfSetsOfClasses.Kind.INCL_ONLY);
+    ExclusionSpecification exclusions = new ExclusionSpecification(ExclusionSpecification.Kind.INCL_ONLY);
     Collection<String> inclusions1 = new HashSet<String>();
     inclusions1.add("java/awt/Button");
-    exclusions.addSet(new ExplicitSetOfClasses(inclusions1, true, false));
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions1));
     Collection<String> inclusions2 = new HashSet<String>();
     inclusions2.add("java/awt/Canvas");
-    exclusions.addSet(new ExplicitSetOfClasses(inclusions2, true, false));
-    scope.setExclusions(exclusions);
-
-        assertFalse(scope.getExclusions().contains(buttonRef.getName().toString().substring(1)));
-    }
-
-    @Test
-    public void testMultipleInclusionsSingleExclusions() throws IOException {
-        AnalysisScope scope = AnalysisScopeReader.readJavaScope(TestConstants.WALA_TESTDATA, null,
-                ExclusionsTest.class.getClassLoader());
-        TypeReference buttonRef = TypeReference.findOrCreate(ClassLoaderReference.Application,
-                StringStuff.deployment2CanonicalTypeString("java.awt.Button"));
-
-    SetOfSetsOfClasses exclusions =
-        new SetOfSetsOfClasses(SetOfSetsOfClasses.Kind.INCL_OVERRIDE_EXCL);
-    InputStream exclusionStream =
-        new FileInputStream((new FileProvider()).getFile("GUIExclusions.txt"));
-    exclusions.addSet(new FileOfClasses(exclusionStream));
-    Collection<String> inclusions1 = new HashSet<String>();
-    inclusions1.add("java/awt/Button");
-    exclusions.addSet(new ExplicitSetOfClasses(inclusions1, true, false));
-        Collection<String> inclusions2 = new HashSet<String>();
-        inclusions2.add("java/awt/Canvas");
-        exclusions.addSet(new ExplicitSetOfClasses(inclusions2, true, false));
-        scope.setExclusions(exclusions);
-        assertFalse(scope.getExclusions().contains(buttonRef.getName().toString().substring(1)));
-    }
-
-    @Test
-    public void testMultipleInclusionsMultipleExclusions() throws IOException {
-        AnalysisScope scope = AnalysisScopeReader.readJavaScope(TestConstants.WALA_TESTDATA, null,
-                ExclusionsTest.class.getClassLoader());
-        TypeReference buttonRef = TypeReference.findOrCreate(ClassLoaderReference.Application,
-                StringStuff.deployment2CanonicalTypeString("java.awt.Button"));
-
-    SetOfSetsOfClasses exclusions =
-        new SetOfSetsOfClasses(SetOfSetsOfClasses.Kind.INCL_OVERRIDE_EXCL);
-    InputStream exclusionStream1 =
-        new FileInputStream((new FileProvider()).getFile("GUIExclusions.txt"));
-    exclusions.addSet(new FileOfClasses(exclusionStream1));
-    InputStream exclusionStream2 =
-        new FileInputStream((new FileProvider()).getFile("GUICorbaExclusions.txt"));
-    exclusions.addSet(new FileOfClasses(exclusionStream2));
-    Collection<String> inclusions1 = new HashSet<String>();
-        inclusions1.add("java/awt/Button");
-    exclusions.addSet(new ExplicitSetOfClasses(inclusions1, true, false));
-    Collection<String> inclusions2 = new HashSet<String>();
-    inclusions2.add("java/awt/Canvas");
-    exclusions.addSet(new ExplicitSetOfClasses(inclusions2, true, false));
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions2));
     scope.setExclusions(exclusions);
     assertFalse(scope.getExclusions().contains(buttonRef.getName().toString().substring(1)));
+    }
+
+  @Test
+  public void testMultipleInclusionsSingleExclusions() throws IOException {
+    AnalysisScope scope = AnalysisScopeReader.readJavaScope(TestConstants.WALA_TESTDATA, null,
+        ExclusionsTest.class.getClassLoader());
+    TypeReference buttonRef = TypeReference.findOrCreate(ClassLoaderReference.Application,
+        StringStuff.deployment2CanonicalTypeString("java.awt.Button"));
+    ExclusionSpecification exclusions =
+        new ExclusionSpecification(ExclusionSpecification.Kind.INCL_OVERRIDE_EXCL);
+    InputStream exclusionStream =
+        new FileInputStream((new FileProvider()).getFile("GUIExclusions.txt"));
+    exclusions.addExclusionSet(new FileOfClasses(exclusionStream));
+    Collection<String> inclusions1 = new HashSet<String>();
+    inclusions1.add("java/awt/Button");
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions1));
+    Collection<String> inclusions2 = new HashSet<String>();
+    inclusions2.add("java/awt/Canvas");
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions2));
+    scope.setExclusions(exclusions);
+    assertFalse(scope.getExclusions().contains(buttonRef.getName().toString().substring(1)));
+    }
+
+  @Test
+  public void testMultipleInclusionsMultipleExclusions() throws IOException {
+    AnalysisScope scope = AnalysisScopeReader.readJavaScope(TestConstants.WALA_TESTDATA, null,
+        ExclusionsTest.class.getClassLoader());
+    TypeReference buttonRef = TypeReference.findOrCreate(ClassLoaderReference.Application,
+        StringStuff.deployment2CanonicalTypeString("java.awt.Button"));
+    ExclusionSpecification exclusions =
+        new ExclusionSpecification(ExclusionSpecification.Kind.INCL_OVERRIDE_EXCL);
+    InputStream exclusionStream1 =
+        new FileInputStream((new FileProvider()).getFile("GUIExclusions.txt"));
+    exclusions.addExclusionSet(new FileOfClasses(exclusionStream1));
+    InputStream exclusionStream2 =
+        new FileInputStream((new FileProvider()).getFile("GUICorbaExclusions.txt"));
+    exclusions.addExclusionSet(new FileOfClasses(exclusionStream2));
+    Collection<String> inclusions1 = new HashSet<String>();
+        inclusions1.add("java/awt/Button");
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions1));
+    Collection<String> inclusions2 = new HashSet<String>();
+    inclusions2.add("java/awt/Canvas");
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions2));
+    scope.setExclusions(exclusions);
+    assertFalse(scope.getExclusions().contains(buttonRef.getName().toString().substring(1)));
+    }
+  
+  @Test(expected = IllegalArgumentException.class)
+  public void testInvalidExclusionAdd() throws IOException {
+    ExclusionSpecification exclusions = new ExclusionSpecification(ExclusionSpecification.Kind.INCL_ONLY);
+    Collection<String> inclusions1 = new HashSet<String>();
+    inclusions1.add("java/awt/Button");
+    exclusions.addExclusionSet(new ExplicitSetOfClasses(inclusions1));
+    }
+  
+  @Test(expected = IllegalArgumentException.class)
+  public void testInvalidInclusionAdd() throws IOException {
+    ExclusionSpecification exclusions = new ExclusionSpecification(ExclusionSpecification.Kind.EXCL_ONLY);
+    Collection<String> inclusions1 = new HashSet<String>();
+    inclusions1.add("java/awt/Button");
+    exclusions.addInclusionSet(new ExplicitSetOfClasses(inclusions1));
     }
 }
