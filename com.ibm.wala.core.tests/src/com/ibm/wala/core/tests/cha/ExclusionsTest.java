@@ -34,7 +34,6 @@ import com.ibm.wala.util.config.SetOfSetsOfClasses;
 import com.ibm.wala.util.io.FileProvider;
 import com.ibm.wala.util.strings.StringStuff;
 
-
 public class ExclusionsTest {
 
   @Test

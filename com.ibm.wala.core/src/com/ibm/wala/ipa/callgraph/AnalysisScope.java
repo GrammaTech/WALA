@@ -50,7 +50,6 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.strings.Atom;
 import com.ibm.wala.util.strings.ImmutableByteArray;
 
-
 /**
  * Base class that represents a set of files to analyze.
  * 
@@ -152,7 +151,7 @@ public class AnalysisScope {
 
   /** 
    * Return the information regarding the primordial loader.
-   * */
+   */
   public ClassLoaderReference getPrimordialLoader() {
     return getLoader(PRIMORDIAL);
   }
