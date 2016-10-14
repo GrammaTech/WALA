@@ -1,8 +1,6 @@
 package com.ibm.wala.util.config;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
 
 import com.ibm.wala.util.debug.UnimplementedError;
 
@@ -13,25 +11,25 @@ import com.ibm.wala.util.debug.UnimplementedError;
  * excluded from the analysis (see e.g. the usage of exclusions in
  * com.ibm.wala.classLoader.ClassLoaderImpl.loadAllClasses())
  * 
- * <p> It is awkward that ExclusionSpecification both extends SetOfClasses and
- * contains two collections of SetOfClasses. However this is necessary to
+ * <p>
+ * It is awkward that ExclusionSpecification both extends SetOfClasses and
+ * contains up to two instances of SetOfClasses. However this is necessary to
  * express complex custom logic for exclusions while conforming to WALA's
  * abstraction where exclusions are a single SetOfClasses in the AnalysisScope.
  * 
- * <p>An ExclusionSpecification can contain zero or more inclusion SetOfClasses and
- * zero or more exclusion SetOfClasses. However, there are restrictions based on
+ * <p>
+ * An ExclusionSpecification can contain zero or one inclusion SetOfClasses and
+ * zero or one exclusion SetOfClasses. However, there are restrictions based on
  * the kind field, as follows:
  *
  * <ul>
- * <li>INCL_ONLY - zero or more inclusion sets (typically one), and no exclusion
- * sets. contains(klass) is true iff klass is in the complement of the union of
- * the inclusion sets.
- * <li>EXCL_ONLY - zero or more exclusion sets (typically one), and no inclusion
- * sets. contains(klass) is true iff klass is in the union of the exclusion
- * sets.
- * <li>INCL_OVERRIDE_EXCL - zero or more inclusion sets and zero or more
- * inclusion sets (typically one of each). contains(klass) is true iff klass is
- * in the union of the exclusion sets minus the union of the inclusion sets.
+ * <li>INCL_ONLY - one inclusion set, no exclusion set. contains(klass) is true
+ * iff klass is in the complement of the inclusion set.
+ * <li>EXCL_ONLY - one exclusion set, no inclusion set. contains(klass) is true
+ * iff klass is in the exclusion set.
+ * <li>INCL_OVERRIDE_EXCL - one inclusion set and one exclusion set.
+ * contains(klass) is true iff klass is in the exclusion set minus the inclusion
+ * set.
  * </ul>
  */
 public class ExclusionSpecification extends SetOfClasses implements Serializable {
@@ -43,49 +41,49 @@ public class ExclusionSpecification extends SetOfClasses implements Serializable
   }
 
   private Kind kind;
-  private Collection<SetOfClasses> inclusions;
-  private Collection<SetOfClasses> exclusions;
+  private SetOfClasses inclusions;
+  private SetOfClasses exclusions;
   
-  public ExclusionSpecification(Kind kind) {
+  public ExclusionSpecification(Kind kind, SetOfClasses inclusions, SetOfClasses exclusions) {
     this.kind = kind;
-    this.inclusions = new ArrayList<SetOfClasses>();
-    this.exclusions = new ArrayList<SetOfClasses>();
-  }
-  
-  public void addInclusionSet(SetOfClasses set) {
-    if ((kind != Kind.INCL_ONLY) && (kind != Kind.INCL_OVERRIDE_EXCL)){
-      throw new IllegalArgumentException("Illegal attempt to add inclusions when kind is " + kind);
+    switch (kind) {
+    case INCL_ONLY :
+      if (inclusions == null || exclusions != null){
+        throw new IllegalArgumentException("Illegal arguments for ExclusionSpecification of type INCL_ONLY");
+      }
+      this.inclusions = inclusions;
+      break;
+    case EXCL_ONLY:
+      if (inclusions != null || exclusions == null){
+        throw new IllegalArgumentException("Illegal arguments for ExclusionSpecification of type EXCL_ONLY");
+      }
+      this.exclusions = exclusions;
+      break;
+    case INCL_OVERRIDE_EXCL:
+      if (inclusions == null || exclusions == null){
+        throw new IllegalArgumentException("Illegal arguments for ExclusionSpecification of type INCL_OVERRIDE_EXCL");
+      }
+      this.inclusions = inclusions;
+      this.exclusions = exclusions;
+      break;
+    default:
+      throw new IllegalArgumentException("Invalid kind for ExclusionSpecification: " + kind);
     }
-    inclusions.add(set);
-  }
-  
-  public void addExclusionSet(SetOfClasses set) {
-    if ((kind != Kind.EXCL_ONLY) && (kind != Kind.INCL_OVERRIDE_EXCL)){
-      throw new IllegalArgumentException("Illegal attempt to add exclusions when kind is " + kind);
-    }
-    exclusions.add(set);
+    // TODO potentially check if inclusions/exclusions are empty and throw error; would require adding isEmpty() 
+    // method to SetOfClasses.
   }
   
   @Override
   public boolean contains(String klassName) {
-    boolean isExcluded = false;
-    boolean isIncluded = false;
-    for (SetOfClasses incl : inclusions) {
-      if (incl.contains(klassName)) {
-        isIncluded = true;
-      }
-    }
-    for (SetOfClasses excl : exclusions) {
-      if (excl.contains(klassName)) {
-        isExcluded = true;
-      }
-    }   
-    if (kind == Kind.INCL_ONLY) {
-      return !isIncluded;
-    } else if (kind == Kind.EXCL_ONLY) {
-      return isExcluded;
-    } else { // kind is INCL_OVERRIDE_EXCL
-      return isExcluded && !isIncluded;
+    switch (kind) {
+    case INCL_ONLY:
+      return !inclusions.contains(klassName);
+    case EXCL_ONLY:
+      return exclusions.contains(klassName);
+    case INCL_OVERRIDE_EXCL:
+      return exclusions.contains(klassName) && !inclusions.contains(klassName);
+    default:
+      throw new IllegalArgumentException("contains() is unsupported for ExclusionSpecification kind " + kind);
     }
   }
 
