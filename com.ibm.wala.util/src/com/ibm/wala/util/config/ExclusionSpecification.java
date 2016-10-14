@@ -40,9 +40,9 @@ public class ExclusionSpecification extends SetOfClasses implements Serializable
     INCL_OVERRIDE_EXCL
   }
 
-  private Kind kind;
-  private SetOfClasses inclusions;
-  private SetOfClasses exclusions;
+  private final Kind kind;
+  private final SetOfClasses inclusions;
+  private final SetOfClasses exclusions;
   
   public ExclusionSpecification(Kind kind, SetOfClasses inclusions, SetOfClasses exclusions) {
     this.kind = kind;
@@ -52,11 +52,13 @@ public class ExclusionSpecification extends SetOfClasses implements Serializable
         throw new IllegalArgumentException("Illegal arguments for ExclusionSpecification of type INCL_ONLY");
       }
       this.inclusions = inclusions;
+      this.exclusions = null;
       break;
     case EXCL_ONLY:
       if (inclusions != null || exclusions == null){
         throw new IllegalArgumentException("Illegal arguments for ExclusionSpecification of type EXCL_ONLY");
       }
+      this.inclusions = null;
       this.exclusions = exclusions;
       break;
     case INCL_OVERRIDE_EXCL:
