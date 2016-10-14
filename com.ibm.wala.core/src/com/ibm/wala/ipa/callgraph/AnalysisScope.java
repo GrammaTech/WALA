@@ -28,6 +28,7 @@ import java.util.jar.Manifest;
 import com.ibm.wala.classLoader.ArrayClassLoader;
 import com.ibm.wala.classLoader.BinaryDirectoryTreeModule;
 import com.ibm.wala.classLoader.ClassFileModule;
+import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IClassLoader;
 import com.ibm.wala.classLoader.JarFileModule;
 import com.ibm.wala.classLoader.Language;
@@ -144,7 +145,11 @@ public class AnalysisScope {
     return loader.getReference().equals(getLoader(APPLICATION));
   }
 
-  /**
+  public boolean isApplicationClass(IClass klass) {
+    return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
+  }
+
+  /** 
    * Return the information regarding the primordial loader.
    */
   public ClassLoaderReference getPrimordialLoader() {

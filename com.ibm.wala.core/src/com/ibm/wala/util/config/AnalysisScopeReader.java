@@ -24,6 +24,7 @@ import com.ibm.wala.classLoader.BinaryDirectoryTreeModule;
 import com.ibm.wala.classLoader.Module;
 import com.ibm.wala.classLoader.SourceDirectoryTreeModule;
 import com.ibm.wala.ipa.callgraph.AnalysisScope;
+import com.ibm.wala.ipa.callgraph.AnalysisScopeAppExclusions;
 import com.ibm.wala.properties.WalaProperties;
 import com.ibm.wala.shrikeCT.InvalidClassFileException;
 import com.ibm.wala.types.ClassLoaderReference;
@@ -210,6 +211,35 @@ public class AnalysisScopeReader {
 
     addClassPathToScope(classPath, scope, loader);
 
+    return scope;
+  }
+
+  /**
+   * Method with the same logic as makeJavaBinaryAnalysisScope(classPath, exclusionsFile) but also
+   * allowing application exclusions to be set.
+   *
+   * @param classPath
+   * @param exclusionsFile
+   * @param appExclusionsFile file specifying classes to be considered as non-application even
+   *        though they are loaded by application class loader
+   * @return
+   * @throws IOException
+   */
+  public static AnalysisScope makeJavaBinaryAnalysisScope(String classPath, File exclusionsFile, 
+        File appExclusionsFile) throws IOException {
+    if (classPath == null) {
+      throw new IllegalArgumentException("classPath null");
+    }
+    if (appExclusionsFile == null) {
+      throw new IllegalArgumentException("Application exclusions file is null");
+    }
+
+    InputStream fis = new FileInputStream(appExclusionsFile);
+    AnalysisScopeAppExclusions starterScope =
+        AnalysisScopeAppExclusions.createJavaAnalysisScope(new FileOfClasses(fis));
+    AnalysisScope scope = read(starterScope, BASIC_FILE, exclusionsFile, MY_CLASSLOADER, new FileProvider());
+    ClassLoaderReference loader = scope.getLoader(AnalysisScope.APPLICATION);
+    addClassPathToScope(classPath, scope, loader);
     return scope;
   }
 
