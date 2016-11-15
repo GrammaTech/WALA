@@ -38,7 +38,7 @@ public class AllApplicationEntrypoints extends HashSet<Entrypoint> {
     }
     for (IClass klass : cha) {
       if (!klass.isInterface()) {
-        if (isApplicationClass(scope, klass)) {
+        if (scope.isApplicationClass(klass)) {
           for (Iterator methodIt = klass.getDeclaredMethods().iterator(); methodIt.hasNext();) {
             IMethod method = (IMethod) methodIt.next();
             if (!method.isAbstract()) {
@@ -51,13 +51,6 @@ public class AllApplicationEntrypoints extends HashSet<Entrypoint> {
     if (DEBUG) {
       System.err.println((getClass() + "Number of EntryPoints:" + size()));
     }
-
   }
 
-  /**
-   * @return true iff klass is loaded by the application loader.
-   */
-  private boolean isApplicationClass(AnalysisScope scope, IClass klass) {
-    return scope.getApplicationLoader().equals(klass.getClassLoader().getReference());
-  }
 }
