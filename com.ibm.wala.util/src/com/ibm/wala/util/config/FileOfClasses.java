@@ -59,6 +59,7 @@ public class FileOfClasses extends SetOfClasses implements Serializable {
     }
 
     is.close();
+    input.close();
   }
 
   private void compile() {

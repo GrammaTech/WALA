@@ -215,28 +215,29 @@ public class AnalysisScopeReader {
   }
 
   /**
-   * Method with the same logic as makeJavaBinaryAnalysisScope(classPath, exclusionsFile) but also
-   * allowing application exclusions to be set.
+   * Method with the same logic as makeJavaBinaryAnalysisScope(classPath,
+   * exclusionsFile) but also allowing application exclusions to be set.
    *
    * @param classPath
    * @param exclusionsFile
-   * @param appExclusionsFile file specifying classes to be considered as non-application even
-   *        though they are loaded by application class loader
-   * @return
+   * @param appExclusionsFileStream
+   *          input stream to file specifying classes to be considered as
+   *          non-application even though they are loaded by application class
+   *          loader
+   * @return the desired analysis scope
    * @throws IOException
    */
   public static AnalysisScope makeJavaBinaryAnalysisScope(String classPath, File exclusionsFile, 
-        File appExclusionsFile) throws IOException {
+        InputStream appExclusionsFileStream) throws IOException {
     if (classPath == null) {
       throw new IllegalArgumentException("classPath null");
     }
-    if (appExclusionsFile == null) {
-      throw new IllegalArgumentException("Application exclusions file is null");
+    if (appExclusionsFileStream == null) {
+      throw new IllegalArgumentException("Application exclusions file stream is null");
     }
 
-    InputStream fis = new FileInputStream(appExclusionsFile);
     AnalysisScopeAppExclusions starterScope =
-        AnalysisScopeAppExclusions.createJavaAnalysisScope(new FileOfClasses(fis));
+        AnalysisScopeAppExclusions.createJavaAnalysisScope(new FileOfClasses(appExclusionsFileStream));
     AnalysisScope scope = read(starterScope, BASIC_FILE, exclusionsFile, MY_CLASSLOADER, new FileProvider());
     ClassLoaderReference loader = scope.getLoader(AnalysisScope.APPLICATION);
     addClassPathToScope(classPath, scope, loader);
