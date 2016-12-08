@@ -199,11 +199,12 @@ public class TabulationSolver<T, P, F> {
    *
    * @return a representation of the result
    */
-  public TabulationResult<T, P, F> solve() throws CancelException {
+
+  public TabulationResult<T, P, F> solve(int threshold) throws CancelException {
 
     try {
       initialize();
-      forwardTabulateSLRPs();
+      forwardTabulateSLRPs(threshold);
       Result r = new Result();
       return r;
     } catch (CancelException e) {
@@ -241,12 +242,13 @@ public class TabulationSolver<T, P, F> {
    *
    * @throws CancelException
    */
-  private void forwardTabulateSLRPs() throws CancelException {
+  private void forwardTabulateSLRPs(int threshold) throws CancelException {
     assert curPathEdge == null : "curPathEdge should not be non-null here";
     if (worklist == null) {
       worklist = makeWorklist();
     }
-    while (worklist.size() > 0) {
+    while (worklist.size() > 0 && threshold != 0) {
+      threshold = threshold -1;
       MonitorUtil.throwExceptionIfCanceled(progressMonitor);
       if (verbose) {
         performVerboseAction();

@@ -131,8 +131,8 @@ public class Slicer {
    * @throws CancelException
    */
   public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
-      DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
-    return computeSlice(new SDG(cg, pa, ModRef.make(), dOptions, cOptions), Collections.singleton(s), true);
+      DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold) throws IllegalArgumentException, CancelException {
+    return computeSlice(new SDG(cg, pa, ModRef.make(), dOptions, cOptions), Collections.singleton(s), true, threshold);
   }
 
   /**
@@ -141,8 +141,8 @@ public class Slicer {
    * @throws CancelException
    */
   public static Collection<Statement> computeForwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
-      DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
-    return computeSlice(new SDG(cg, pa, ModRef.make(), dOptions, cOptions), Collections.singleton(s), false);
+      DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold) throws IllegalArgumentException, CancelException {
+    return computeSlice(new SDG(cg, pa, ModRef.make(), dOptions, cOptions), Collections.singleton(s), false, threshold);
   }
 
   /**
@@ -150,8 +150,12 @@ public class Slicer {
    * 
    * @throws CancelException
    */
+  public static Collection<Statement> computeBackwardSlice(SDG sdg, Statement s, int threshold) throws IllegalArgumentException, CancelException {
+    return computeSlice(sdg, Collections.singleton(s), true, threshold);
+  }
+  
   public static Collection<Statement> computeBackwardSlice(SDG sdg, Statement s) throws IllegalArgumentException, CancelException {
-    return computeSlice(sdg, Collections.singleton(s), true);
+    return computeBackwardSlice(sdg,s,-1);
   }
 
   /**
@@ -159,8 +163,12 @@ public class Slicer {
    * 
    * @throws CancelException
    */
+  public static Collection<Statement> computeForwardSlice(SDG sdg, Statement s, int threshold) throws IllegalArgumentException, CancelException {
+    return computeSlice(sdg, Collections.singleton(s), false, threshold);
+  }
+  
   public static Collection<Statement> computeForwardSlice(SDG sdg, Statement s) throws IllegalArgumentException, CancelException {
-    return computeSlice(sdg, Collections.singleton(s), false);
+    return computeForwardSlice(sdg,s,-1);
   }
 
   /**
@@ -168,8 +176,13 @@ public class Slicer {
    * 
    * @throws CancelException
    */
-  public static Collection<Statement> computeForwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException, CancelException {
-    return computeSlice(sdg, ss, false);
+  public static Collection<Statement> computeForwardSlice(SDG sdg, Collection<Statement> ss, int threshold) throws IllegalArgumentException, CancelException {
+    return computeSlice(sdg, ss, false, threshold);
+  }
+
+  public static Collection<Statement> computeForwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException,
+  CancelException {
+    return computeForwardSlice(sdg,ss,-1);
   }
   
   /**
@@ -177,20 +190,26 @@ public class Slicer {
    * 
    * @throws CancelException
    */
-  public static Collection<Statement> computeBackwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException,
+  
+  public static Collection<Statement> computeBackwardSlice(SDG sdg, Collection<Statement> ss, int threshold) throws IllegalArgumentException,
       CancelException {
-    return computeSlice(sdg, ss, true);
+    return computeSlice(sdg, ss, true, threshold);
+  }
+  
+  public static Collection<Statement> computeBackwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException,
+  CancelException {
+    return computeBackwardSlice(sdg,ss,-1);
   }
 
   /**
    * @param ss a collection of statements of interest
    * @throws CancelException
    */
-  protected static Collection<Statement> computeSlice(SDG sdg, Collection<Statement> ss, boolean backward) throws CancelException {
+  protected static Collection<Statement> computeSlice(SDG sdg, Collection<Statement> ss, boolean backward, int threshold) throws CancelException {
     if (sdg == null) {
       throw new IllegalArgumentException("sdg cannot be null");
     }
-    return new Slicer().slice(sdg, ss, backward);
+    return new Slicer().slice(sdg, ss, backward,threshold);
   }
 
   /**
@@ -202,7 +221,7 @@ public class Slicer {
    * @return the {@link Statement}s found by the slicer
    * @throws CancelException
    */
-  public Collection<Statement> slice(SDG sdg, Collection<Statement> roots, boolean backward) throws CancelException {
+  public Collection<Statement> slice(SDG sdg, Collection<Statement> roots, boolean backward, int threshold) throws CancelException {
     if (sdg == null) {
       throw new IllegalArgumentException("sdg cannot be null");
     }
@@ -211,7 +230,7 @@ public class Slicer {
 
     PartiallyBalancedTabulationSolver<Statement, PDG, Object> solver = PartiallyBalancedTabulationSolver
         .createPartiallyBalancedTabulationSolver(p, null);
-    TabulationResult<Statement, PDG, Object> tr = solver.solve();
+    TabulationResult<Statement, PDG, Object> tr = solver.solve(threshold);
 
     Collection<Statement> slice = tr.getSupergraphNodesReached();
 
@@ -235,9 +254,9 @@ public class Slicer {
    * @return the backward slice of s.
    * @throws CancelException
    */
-  public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<InstanceKey> pointerAnalysis)
+  public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<InstanceKey> pointerAnalysis, int threshold)
       throws IllegalArgumentException, CancelException {
-    return computeBackwardSlice(s, cg, pointerAnalysis, DataDependenceOptions.FULL, ControlDependenceOptions.FULL);
+    return computeBackwardSlice(s, cg, pointerAnalysis, DataDependenceOptions.FULL, ControlDependenceOptions.FULL, threshold);
   }
 
   /**
