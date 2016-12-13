@@ -26,6 +26,7 @@ public final class ConstantKey<T> implements InstanceKey {
   private final T value;
 
   private final IClass valueClass;
+  private Integer hashCode = null;
 
   public ConstantKey(T value, IClass valueClass) {
     this.value = value;
@@ -44,7 +45,11 @@ public final class ConstantKey<T> implements InstanceKey {
 
   @Override
   public int hashCode() {
-    return value == null ? 65535 : 1877 * value.hashCode();
+    // cache on first call
+    if (hashCode == null) {
+    hashCode =  value == null ? 65535 : 1877 * value.hashCode();
+    }
+    return hashCode;
   }
 
   @Override
