@@ -131,10 +131,30 @@ public class Slicer {
    * @throws CancelException
    */
   public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
+      DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
+    return computeBackwardSlice(s,cg,pa,dOptions,cOptions);
+  }
+  
+  /**
+   * @param s a statement of interest
+   * @return the backward slice of s.
+   * @throws CancelException
+   */
+  public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
       DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold) throws IllegalArgumentException, CancelException {
     return computeSlice(new SDG(cg, pa, ModRef.make(), dOptions, cOptions), Collections.singleton(s), true, threshold);
   }
 
+  /**
+   * @param s a statement of interest
+   * @return the forward slice of s.
+   * @throws CancelException
+   */
+  public static Collection<Statement> computeForwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
+      DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
+    return computeForwardSlice(s,cg,pa,dOptions,cOptions);
+  }
+  
   /**
    * @param s a statement of interest
    * @return the forward slice of s.
@@ -154,6 +174,11 @@ public class Slicer {
     return computeSlice(sdg, Collections.singleton(s), true, threshold);
   }
   
+  /**
+   * Use the passed-in SDG
+   * 
+   * @throws CancelException
+   */
   public static Collection<Statement> computeBackwardSlice(SDG sdg, Statement s) throws IllegalArgumentException, CancelException {
     return computeBackwardSlice(sdg,s,-1);
   }
@@ -167,6 +192,11 @@ public class Slicer {
     return computeSlice(sdg, Collections.singleton(s), false, threshold);
   }
   
+  /**
+   * Use the passed-in SDG
+   * 
+   * @throws CancelException
+   */
   public static Collection<Statement> computeForwardSlice(SDG sdg, Statement s) throws IllegalArgumentException, CancelException {
     return computeForwardSlice(sdg,s,-1);
   }
@@ -179,7 +209,12 @@ public class Slicer {
   public static Collection<Statement> computeForwardSlice(SDG sdg, Collection<Statement> ss, int threshold) throws IllegalArgumentException, CancelException {
     return computeSlice(sdg, ss, false, threshold);
   }
-
+  
+  /**
+   * Use the passed-in SDG
+   * 
+   * @throws CancelException
+   */
   public static Collection<Statement> computeForwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException,
   CancelException {
     return computeForwardSlice(sdg,ss,-1);
@@ -190,12 +225,16 @@ public class Slicer {
    * 
    * @throws CancelException
    */
-  
   public static Collection<Statement> computeBackwardSlice(SDG sdg, Collection<Statement> ss, int threshold) throws IllegalArgumentException,
       CancelException {
     return computeSlice(sdg, ss, true, threshold);
   }
   
+  /**
+   * Use the passed-in SDG
+   * 
+   * @throws CancelException
+   */
   public static Collection<Statement> computeBackwardSlice(SDG sdg, Collection<Statement> ss) throws IllegalArgumentException,
   CancelException {
     return computeBackwardSlice(sdg,ss,-1);
@@ -212,6 +251,8 @@ public class Slicer {
     return new Slicer().slice(sdg, ss, backward,threshold);
   }
 
+
+
   /**
    * Main driver logic.
    * 
@@ -226,8 +267,10 @@ public class Slicer {
       throw new IllegalArgumentException("sdg cannot be null");
     }
 
+    
     SliceProblem p = makeSliceProblem(roots, sdg, backward);
 
+    
     PartiallyBalancedTabulationSolver<Statement, PDG, Object> solver = PartiallyBalancedTabulationSolver
         .createPartiallyBalancedTabulationSolver(p, null);
     TabulationResult<Statement, PDG, Object> tr = solver.solve(threshold);
@@ -239,6 +282,18 @@ public class Slicer {
     }
 
     return slice;
+  }
+  
+  /** 
+   * same as the other slice method, but without threshold
+   * @param sdg
+   * @param roots
+   * @param backward
+   * @return
+   * @throws CancelException
+   */
+  public Collection<Statement> slice(SDG sdg, Collection<Statement> roots, boolean backward) throws CancelException {
+    return slice(sdg,roots,backward,-1);
   }
 
   /**
@@ -252,6 +307,17 @@ public class Slicer {
   /**
    * @param s a statement of interest
    * @return the backward slice of s.
+   * @throws IllegalArgumentException 
+   * @throws CancelException
+   */
+  public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<InstanceKey> pointerAnalysis) throws IllegalArgumentException, CancelException {
+    return computeBackwardSlice(s,cg,pointerAnalysis,-1);
+  }
+
+  /**
+   * @param s a statement of interest
+   * @return the backward slice of s.
+   * @throws IllegalArgumentException 
    * @throws CancelException
    */
   public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<InstanceKey> pointerAnalysis, int threshold)
