@@ -199,6 +199,9 @@ public class TabulationSolver<T, P, F> {
    *
    * @return a representation of the result
    */
+  public TabulationResult<T, P, F> solve() throws CancelException {
+    return solve(-1);
+  }
 
   public TabulationResult<T, P, F> solve(int threshold) throws CancelException {
 
