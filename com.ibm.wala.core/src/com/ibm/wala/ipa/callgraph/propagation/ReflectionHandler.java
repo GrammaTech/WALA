@@ -63,7 +63,7 @@ public class ReflectionHandler {
         System.err.println("Slice " + st);
       }
       Collection<Statement> slice = Slicer.computeForwardSlice(st, builder.callGraph, null, DataDependenceOptions.REFLECTION,
-          ControlDependenceOptions.NONE,-1);
+          ControlDependenceOptions.NONE,-1,-1);
       if (VERBOSE) {
         for (Statement x : slice) {
           System.err.println(" " + x);

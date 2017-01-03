@@ -200,14 +200,14 @@ public class TabulationSolver<T, P, F> {
    * @return a representation of the result
    */
   public TabulationResult<T, P, F> solve() throws CancelException {
-    return solve(-1);
+    return solve(-1,-1);
   }
 
-  public TabulationResult<T, P, F> solve(int threshold) throws CancelException {
+  public TabulationResult<T, P, F> solve(int threshold, long time_threshold) throws CancelException {
 
     try {
       initialize();
-      forwardTabulateSLRPs(threshold);
+      forwardTabulateSLRPs(threshold,time_threshold);
       Result r = new Result();
       return r;
     } catch (CancelException e) {
@@ -245,12 +245,14 @@ public class TabulationSolver<T, P, F> {
    *
    * @throws CancelException
    */
-  private void forwardTabulateSLRPs(int threshold) throws CancelException {
+  private void forwardTabulateSLRPs(int threshold, long time_threshold) throws CancelException {
     assert curPathEdge == null : "curPathEdge should not be non-null here";
     if (worklist == null) {
       worklist = makeWorklist();
     }
-    while (worklist.size() > 0 && threshold != 0) {
+    long init = System.currentTimeMillis();
+    while (worklist.size() > 0 && threshold != 0 && 
+        (time_threshold < 0 || (System.currentTimeMillis() - init)/1000 < time_threshold)) {
       threshold = threshold -1;
       MonitorUtil.throwExceptionIfCanceled(progressMonitor);
       if (verbose) {
