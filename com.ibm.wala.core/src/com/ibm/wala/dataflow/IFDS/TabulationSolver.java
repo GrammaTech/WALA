@@ -200,14 +200,14 @@ public class TabulationSolver<T, P, F> {
    * @return a representation of the result
    */
   public TabulationResult<T, P, F> solve() throws CancelException {
-    return solve(-1);
+    return solve(-1,-1);
   }
 
-  public TabulationResult<T, P, F> solve(int threshold) throws CancelException {
+  public TabulationResult<T, P, F> solve(int threshold, long timeoutSec) throws CancelException {
 
     try {
       initialize();
-      forwardTabulateSLRPs(threshold);
+      forwardTabulateSLRPs(threshold,timeoutSec);
       Result r = new Result();
       return r;
     } catch (CancelException e) {
@@ -240,17 +240,22 @@ public class TabulationSolver<T, P, F> {
     propagate(seed.entry, seed.d1, seed.target, seed.d2);
   }
 
+  private boolean timedOut(long timeout) {
+    return timeout >= 0 && System.currentTimeMillis() > timeout;
+  }
+  
   /**
    * See POPL 95 paper for this algorithm, Figure 3
    *
    * @throws CancelException
    */
-  private void forwardTabulateSLRPs(int threshold) throws CancelException {
+  private void forwardTabulateSLRPs(int threshold, long timeoutSec) throws CancelException {
     assert curPathEdge == null : "curPathEdge should not be non-null here";
     if (worklist == null) {
       worklist = makeWorklist();
     }
-    while (worklist.size() > 0 && threshold != 0) {
+    long timeout = timeoutSec < 0? -1 : System.currentTimeMillis() + timeoutSec*1000;
+    while (worklist.size() > 0 && threshold != 0 && !timedOut(timeout)) {
       threshold = threshold -1;
       MonitorUtil.throwExceptionIfCanceled(progressMonitor);
       if (verbose) {
@@ -281,13 +286,13 @@ public class TabulationSolver<T, P, F> {
         } else {
           if (supergraph.isCall(edge.target)) {
             // [13]
-            processCall(edge);
+            processCall(edge, timeout);
           } else if (supergraph.isExit(edge.target)) {
             // [21]
-            processExit(edge);
+            processExit(edge, timeout);
           } else {
             // [33]
-            processNormal(edge);
+            processNormal(edge, timeout);
           }
         }
       }
@@ -330,12 +335,16 @@ public class TabulationSolver<T, P, F> {
    * Handle lines [33-37] of the algorithm
    *
    * @param edge
+   * @param timeout 
    */
-  private void processNormal(final PathEdge<T> edge) {
+  private void processNormal(final PathEdge<T> edge, long timeout) {
     if (DEBUG_LEVEL > 0) {
       System.err.println("process normal: " + edge);
     }
     for (Iterator<? extends T> it = supergraph.getSuccNodes(edge.target); it.hasNext();) {
+      if (timedOut(timeout)) {
+        return;
+      }
       final T m = it.next();
       if (DEBUG_LEVEL > 0) {
         System.err.println("normal successor: " + m);
@@ -362,8 +371,9 @@ public class TabulationSolver<T, P, F> {
    *
    * Note that we've changed the way we record summary edges. Summary edges are now associated with a callee (s_p,exit), where the
    * original algorithm used a call, return pair in the caller.
+   * @param timeout 
    */
-  protected void processExit(final PathEdge<T> edge) {
+  protected void processExit(final PathEdge<T> edge, long timeout) {
     if (DEBUG_LEVEL > 0) {
       System.err.println("process exit: " + edge);
     }
@@ -383,6 +393,9 @@ public class TabulationSolver<T, P, F> {
     IntSet callFlowSourceNodes = callFlow.getCallFlowSourceNodes(edge.d1);
     if (callFlowSourceNodes != null) {
       for (IntIterator it = callFlowSourceNodes.intIterator(); it.hasNext();) {
+        if (timedOut(timeout)) {
+          return;
+        }
         // [23] for each d4 s.t. <c,d4> -> <s_p,d1> occurred earlier
         int globalC = it.next();
         final IntSet D4 = callFlow.getCallFlowSources(globalC, edge.d1);
@@ -540,8 +553,9 @@ public class TabulationSolver<T, P, F> {
 
   /**
    * Handle lines [14 - 19] of the algorithm, propagating information into and across a call site.
+   * @param timeout 
    */
-  protected void processCall(final PathEdge<T> edge) {
+  protected void processCall(final PathEdge<T> edge, long timeout) {
     if (DEBUG_LEVEL > 0) {
       System.err.println("process call: " + edge);
     }
@@ -557,13 +571,19 @@ public class TabulationSolver<T, P, F> {
     // [14 - 16]
     boolean hasCallee = false;
     for (Iterator<? extends T> it = supergraph.getCalledNodes(edge.target); it.hasNext();) {
+      if (timedOut(timeout)) {
+        return;
+      }
       hasCallee = true;
       final T callee = it.next();
-      processParticularCallee(edge, c, allReturnSites, callee);
+      processParticularCallee(edge, c, allReturnSites, callee, timeout);
     }
     // special logic: in backwards problems, a "call" node can have
     // "normal" successors as well. deal with these.
     for (Iterator<? extends T> it = supergraph.getNormalSuccessors(edge.target); it.hasNext();) {
+      if (timedOut(timeout)) {
+        return;
+      }
       final T m = it.next();
       if (DEBUG_LEVEL > 0) {
         System.err.println("normal successor: " + m);
@@ -587,6 +607,9 @@ public class TabulationSolver<T, P, F> {
     // [17 - 19]
     // we modify this to handle each return site individually
     for (final T returnSite : allReturnSites) {
+      if (timedOut(timeout)) {
+        return;
+      }
       if (DEBUG_LEVEL > 0) {
         System.err.println(" process return site: " + returnSite);
       }
@@ -622,7 +645,7 @@ public class TabulationSolver<T, P, F> {
    * @param allReturnSites a set collecting return sites for the call. This set is mutated with the return sites for this callee.
    * @param calleeEntry the entry node of the callee in question
    */
-  protected void processParticularCallee(final PathEdge<T> edge, final int callNodeNum, Collection<T> allReturnSites, final T calleeEntry) {
+  protected void processParticularCallee(final PathEdge<T> edge, final int callNodeNum, Collection<T> allReturnSites, final T calleeEntry, final long timeout) {
     if (DEBUG_LEVEL > 0) {
       System.err.println(" process callee: " + calleeEntry);
     }
@@ -658,6 +681,9 @@ public class TabulationSolver<T, P, F> {
       reached.foreach(new IntSetAction() {
         @Override
         public void act(final int d1) {
+          if (timedOut(timeout)) {
+            return;
+          }
           // we get reuse if we _don't_ propagate a new fact to the callee entry
           final boolean gotReuse = !propagate(calleeEntry, d1, calleeEntry, d1);
           recordCall(edge.target, calleeEntry, d1, gotReuse);
@@ -682,6 +708,9 @@ public class TabulationSolver<T, P, F> {
               IntSet reachedBySummary = summaries.getSummaryEdges(s_p_num, x_num, d1);
               if (reachedBySummary != null) {
                 for (final T returnSite : returnSitesForCallee) {
+                  if (timedOut(timeout)) {
+                    return;
+                  }
                   // if "exit" is a valid exit from the callee to the return
                   // site being processed
                   if (supergraph.hasEdge(exit, returnSite)) {
