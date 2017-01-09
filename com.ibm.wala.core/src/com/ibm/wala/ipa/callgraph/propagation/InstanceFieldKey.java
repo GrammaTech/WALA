@@ -18,6 +18,7 @@ import com.ibm.wala.classLoader.IField;
  */
 public class InstanceFieldKey extends AbstractFieldPointerKey {
   private final IField field;
+  private Integer hashCode = null;
 
   public InstanceFieldKey(InstanceKey instance, IField field) {
 
@@ -48,7 +49,11 @@ public class InstanceFieldKey extends AbstractFieldPointerKey {
 
   @Override
   public int hashCode() {
-    return 6229 * field.hashCode() + instance.hashCode();
+    // cache on first call
+    if (hashCode == null) {
+      hashCode = 6229 * field.hashCode() + instance.hashCode();
+    }
+    return hashCode;
   }
 
   @Override
