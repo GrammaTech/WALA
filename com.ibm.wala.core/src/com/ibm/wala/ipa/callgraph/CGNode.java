@@ -19,6 +19,7 @@ import com.ibm.wala.ipa.cha.IClassHierarchyDweller;
 import com.ibm.wala.ssa.DefUse;
 import com.ibm.wala.ssa.IR;
 import com.ibm.wala.util.graph.INodeWithNumber;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * Basic interface for a node in a call graph.
@@ -70,4 +71,6 @@ public interface CGNode extends INodeWithNumber, ContextItem, IClassHierarchyDwe
    * in a given method for a given context
    */
   public Iterator<CallSiteReference> iterateCallSites();
+
+  public JSONObject toJSON();
 }

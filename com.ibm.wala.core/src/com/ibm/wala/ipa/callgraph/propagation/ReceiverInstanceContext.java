@@ -13,6 +13,7 @@ package com.ibm.wala.ipa.callgraph.propagation;
 import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.ipa.callgraph.ContextKey;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * This is a context which is customized for the {@link InstanceKey} of the receiver.
@@ -74,5 +75,13 @@ public class ReceiverInstanceContext implements Context {
 
   public InstanceKey getReceiver() {
     return ik;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

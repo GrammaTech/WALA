@@ -10,6 +10,8 @@
  *******************************************************************************/
 package com.ibm.wala.ssa;
 
+import com.ibm.wala.util.json.JSONObject;
+
 /**
  * Unconditional branch instruction for SSA form.
  */
@@ -63,5 +65,12 @@ public class SSAGotoInstruction extends SSAInstruction {
   @Override
   public boolean isFallThrough() {
     return false;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAGotoInstruction");
+    return res;
   }
 }

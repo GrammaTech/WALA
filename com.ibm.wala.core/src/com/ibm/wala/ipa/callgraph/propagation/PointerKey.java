@@ -26,4 +26,6 @@ package com.ibm.wala.ipa.callgraph.propagation;
  */
 public interface PointerKey {
 
+  public String toJson();
+
 }

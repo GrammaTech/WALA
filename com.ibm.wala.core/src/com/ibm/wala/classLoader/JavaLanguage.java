@@ -71,6 +71,7 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.shrike.Exceptions.MethodResolutionFailure;
 import com.ibm.wala.util.shrike.ShrikeUtil;
 import com.ibm.wala.util.strings.Atom;

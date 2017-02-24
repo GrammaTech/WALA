@@ -28,6 +28,7 @@ import com.ibm.wala.types.annotations.Annotation;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.debug.UnimplementedError;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.strings.Atom;
 
 /**
@@ -379,6 +380,14 @@ public class ArrayClass implements IClass, Constants {
   @Override
   public Collection<Annotation> getAnnotations() {
     return Collections.emptySet();
+  }
+
+  @Override
+  public Object toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().toString());
+    res.put("TODO", "not implemented");
+    return res;
   }
 
 }

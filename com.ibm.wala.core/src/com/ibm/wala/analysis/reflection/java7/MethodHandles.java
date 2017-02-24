@@ -50,6 +50,7 @@ import com.ibm.wala.util.collections.MapIterator;
 import com.ibm.wala.util.functions.Function;
 import com.ibm.wala.util.intset.IntSet;
 import com.ibm.wala.util.intset.IntSetUtil;
+import com.ibm.wala.util.json.JSONObject;
 
 public class MethodHandles {
 
@@ -152,6 +153,14 @@ public class MethodHandles {
     @Override
     public String toString() {
       return "ctxt:" + method.getName();
+    }
+
+    @Override
+    public JSONObject toJSON() {
+      JSONObject res = new JSONObject();
+      res.put("class",this.getClass().toString());
+      res.put("TODO","not implemented");
+      return res;
     }
   }
   

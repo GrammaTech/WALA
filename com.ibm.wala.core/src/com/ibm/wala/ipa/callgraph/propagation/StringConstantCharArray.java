@@ -78,4 +78,9 @@ public class StringConstantCharArray implements InstanceKey {
   public Iterator<Pair<CGNode, NewSiteReference>> getCreationSites(CallGraph CG) {
     return EmptyIterator.instance();
   }
+
+  @Override
+  public String toJson() {
+    return "(STRINGCONSTANTCHARARRAY," + constant + ")";
+  }
 }

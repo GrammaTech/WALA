@@ -28,6 +28,7 @@ import com.ibm.wala.types.annotations.Annotation;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.debug.UnimplementedError;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.strings.Atom;
 
 /**
@@ -268,4 +269,11 @@ public class BypassSyntheticClass extends SyntheticClass {
     return Collections.emptySet();
   }
 
+  @Override
+  public Object toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().toString());
+    res.put("name", this.getName());
+    return res;
+  }
 }

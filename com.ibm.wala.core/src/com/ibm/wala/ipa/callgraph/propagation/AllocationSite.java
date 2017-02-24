@@ -109,4 +109,9 @@ public class AllocationSite implements InstanceKey {
           }
         });
   }
+
+  @Override
+  public String toJson() {
+    return "(ALLOCATIONSITE," + getMethod() + "," + site + ")";
+  }
 }

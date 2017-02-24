@@ -11,6 +11,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * Abstract base class for instructions that load or store from array contents.
@@ -91,4 +92,10 @@ public abstract class SSAArrayReferenceInstruction extends SSAInstruction {
     return true;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAArrayReferenceInstruction");
+    return res;
+  }
 }

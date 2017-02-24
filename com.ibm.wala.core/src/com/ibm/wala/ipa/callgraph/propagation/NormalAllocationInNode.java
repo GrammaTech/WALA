@@ -38,4 +38,8 @@ public final class NormalAllocationInNode extends AllocationSiteInNode {
     return getNode().hashCode() * 8647 + getSite().hashCode();
   }
 
+  @Override
+  public String toJson() {
+    return "(NORMALALLOCATIONINNODE," + super.toJson() + ")";
+  }
 }

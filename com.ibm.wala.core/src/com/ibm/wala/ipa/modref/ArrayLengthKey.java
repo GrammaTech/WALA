@@ -46,4 +46,10 @@ public class ArrayLengthKey extends AbstractFieldPointerKey {
     return "arraylength:" + getInstanceKey();
   }
 
+  @Override
+  public String toJson() {
+    // TODO Auto-generated method stub
+    return "(ARRAYLENGTHKEY," + getInstanceKey().toJson() + ")";
+  }
+
 }

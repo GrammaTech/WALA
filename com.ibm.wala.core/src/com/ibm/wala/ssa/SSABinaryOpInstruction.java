@@ -12,6 +12,7 @@ package com.ibm.wala.ssa;
 
 import com.ibm.wala.shrikeBT.BinaryOpInstruction;
 import com.ibm.wala.shrikeBT.IBinaryOpInstruction;
+import com.ibm.wala.util.json.JSONObject;
 
 public abstract class SSABinaryOpInstruction extends SSAAbstractBinaryInstruction {
 
@@ -73,5 +74,12 @@ public abstract class SSABinaryOpInstruction extends SSAAbstractBinaryInstructio
 
   public boolean mayBeIntegerOp() {
     return mayBeInteger;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSABinaryOpInstruction");
+    return res;
   }
 }

@@ -55,6 +55,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.strings.Atom;
 
 /**
@@ -104,6 +106,13 @@ public class VolatileMethodSummary {
         public boolean isFallThrough() { return true; }
         public String toString (SymbolTable symbolTable) { return "Reserved Slot"; }
         public void visit (IVisitor v) { throw new IllegalStateException(); }
+
+        @Override
+        public JSONObject toJSON() {
+          JSONObject res = new JSONObject();
+          res.put("class", this.getClass().getName());
+          return res;
+        }
     }
     private static final Reserved RESERVED = new Reserved();
 

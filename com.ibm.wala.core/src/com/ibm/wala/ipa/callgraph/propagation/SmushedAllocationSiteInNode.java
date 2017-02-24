@@ -71,4 +71,9 @@ public class SmushedAllocationSiteInNode extends AbstractTypeInNode {
           }
         });
   }
+
+  @Override
+  public String toJson() {
+    return "(SMUSHEDALLOCATIONSITEINNODE," + getNode() + "," + getConcreteType() + ")";
+  }
 }

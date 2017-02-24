@@ -14,6 +14,7 @@ import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A Call instruction.
@@ -218,4 +219,10 @@ public abstract class SSAAbstractInvokeInstruction extends SSAInstruction {
     return s.toString();
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAAbstractInvokeInstruction");
+    return res;
+  }
 }

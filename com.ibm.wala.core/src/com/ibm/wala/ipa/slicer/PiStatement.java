@@ -22,6 +22,7 @@ public class PiStatement extends Statement {
   public PiStatement(CGNode node, SSAPiInstruction pi) {
     super(node);
     this.pi = pi;
+    this.isKeyNode = false;
   }
 
   @Override
@@ -55,5 +56,4 @@ public class PiStatement extends Statement {
   public SSAPiInstruction getPi() {
     return pi;
   }
-
 }

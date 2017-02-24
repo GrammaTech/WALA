@@ -64,4 +64,10 @@ public class LocalPointerKey extends AbstractLocalPointerKey {
   public final boolean isParameter() {
     return valueNumber <= node.getMethod().getNumberOfParameters();
   }
+
+  @Override
+  public String toJson() {
+    return "(LOCALPOINTERKEY," + node + "," + valueNumber + ")";
+
+  }
 }

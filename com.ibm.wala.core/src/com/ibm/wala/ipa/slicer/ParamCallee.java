@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.slicer;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A {@link Statement} representing a formal parameter
@@ -61,6 +62,13 @@ public class ParamCallee extends Statement implements ValueNumberCarrier {
     if (valueNumber != other.valueNumber)
       return false;
     return true;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject ret = super.toJSON();
+    ret.put("valueNumber", valueNumber);
+    return ret;
   }
   
   

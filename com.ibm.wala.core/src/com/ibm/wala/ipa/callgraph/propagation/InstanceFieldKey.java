@@ -64,4 +64,10 @@ public class InstanceFieldKey extends AbstractFieldPointerKey {
   public IField getField() {
     return field;
   }
+
+  @Override
+  public String toJson() {
+    return "(INSTANCEFIELDKEY, " + field + "," + instance.toJson() + ")";
+  }
+
 }

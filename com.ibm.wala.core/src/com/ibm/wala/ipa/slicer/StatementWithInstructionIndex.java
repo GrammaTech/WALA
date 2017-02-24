@@ -11,7 +11,9 @@
 package com.ibm.wala.ipa.slicer;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.ssa.SSAInstruction;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A {@link Statement} which carries an instruction index, representing the index of an {@link SSAInstruction} in the IR instruction
@@ -61,4 +63,12 @@ public abstract class StatementWithInstructionIndex extends Statement {
     return super.toString() + "[" + getInstructionIndex() + "]" + getInstruction();
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject ret = super.toJSON();
+    ret.put("instructionIndex", instructionIndex);
+    //ret.put("instruction", getInstruction().toJSON());
+    //ret.put("instruction_string", getInstruction().toString());
+    return ret;
+  }
 }

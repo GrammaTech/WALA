@@ -11,6 +11,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A checkcast (dynamic type test) instruction. This instruction produces a new value number (like an assignment) if the check
@@ -188,4 +189,10 @@ public abstract class SSACheckCastInstruction extends SSAInstruction {
     return s;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    return res;
+  }
 }

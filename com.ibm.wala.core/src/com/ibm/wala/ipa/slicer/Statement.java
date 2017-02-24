@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.slicer;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * Identifier of a statement in an SDG.
@@ -22,12 +23,15 @@ public abstract class Statement {
 
   private final CGNode node;
 
+  public boolean isKeyNode;
+
   public Statement(final CGNode node) {
     super();
     if (node == null) {
       throw new IllegalArgumentException("null node");
     }
     this.node = node;
+    this.isKeyNode = true;
   }
 
   public abstract Kind getKind();
@@ -66,4 +70,11 @@ public abstract class Statement {
     return getKind().toString() + ":" + getNode();
   }
 
+  public JSONObject toJSON() {
+    JSONObject ret = new JSONObject();
+    ret.put("Kind", getKind().toString());
+    ret.put("CGNode", node.toJSON());
+    ret.put("class", this.getClass().getName());
+    return ret;
+  }
 }

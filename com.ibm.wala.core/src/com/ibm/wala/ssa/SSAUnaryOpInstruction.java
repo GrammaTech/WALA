@@ -11,6 +11,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.shrikeBT.IUnaryOpInstruction;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An SSA instruction for some unary operator.
@@ -51,4 +52,10 @@ public class SSAUnaryOpInstruction extends SSAAbstractUnaryInstruction {
     return operator;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAUnaryOpInstruction");
+    return res;
+  }
  }

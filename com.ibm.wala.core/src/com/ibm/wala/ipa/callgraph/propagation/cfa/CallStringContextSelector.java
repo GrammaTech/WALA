@@ -20,6 +20,7 @@ import com.ibm.wala.ipa.callgraph.ContextSelector;
 import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.util.intset.IntSet;
+import com.ibm.wala.util.json.JSONObject;
 
 public abstract class CallStringContextSelector implements ContextSelector {
 
@@ -71,6 +72,14 @@ public abstract class CallStringContextSelector implements ContextSelector {
 
     public CallString getCallString() {
       return cs;
+    }
+
+    @Override
+    public JSONObject toJSON() {
+      JSONObject res = new JSONObject();
+      res.put("class",this.getClass().toString());
+      res.put("TODO","not implemented");
+      return res;
     }
   };
 

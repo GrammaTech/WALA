@@ -546,6 +546,11 @@ public abstract class PropagationCallGraphBuilder implements CallGraphBuilder {
     public PointerKey getBase() {
       return base;
     }
+
+    @Override
+    public String toJson() {
+      return "(TYPEDPOINTERKEY," + base + "," + type + ")";
+    }
   }
 
   /**

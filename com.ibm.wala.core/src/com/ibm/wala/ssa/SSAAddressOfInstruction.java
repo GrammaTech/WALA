@@ -14,6 +14,7 @@ import com.ibm.wala.ssa.SSAIndirectionData.Name;
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An {@link SSAAddressOfInstruction} represents storing the address of some "source" level entity (@see {@link Name}) into an SSA
@@ -152,5 +153,12 @@ public class SSAAddressOfInstruction extends SSAInstruction {
     } else {
       return indexVal;
     }
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAAddressOfInstruction");
+    return res;
   }
 }

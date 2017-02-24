@@ -59,4 +59,9 @@ public class RTASelectorKey implements PointerKey {
     return null;
   }
 
+  @Override
+  public String toJson() {
+    return "(RTASELECTORKEY," + selector.toString() + ")";
+  }
+
 }

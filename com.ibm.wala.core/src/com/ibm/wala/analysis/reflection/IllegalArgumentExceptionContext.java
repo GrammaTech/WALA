@@ -13,6 +13,7 @@ package com.ibm.wala.analysis.reflection;
 import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.ipa.callgraph.ContextKey;
+import com.ibm.wala.util.json.JSONObject;
 
 
 public class IllegalArgumentExceptionContext implements Context {
@@ -20,5 +21,13 @@ public class IllegalArgumentExceptionContext implements Context {
   @Override
   public ContextItem get(ContextKey name) {
     return null;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().toString());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

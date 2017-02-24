@@ -17,6 +17,7 @@ import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.ipa.callgraph.ContextKey;
 import com.ibm.wala.ipa.callgraph.propagation.FilteredPointerKey;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * @brief
@@ -80,4 +81,11 @@ public class JavaTypeContext implements Context {
     return type;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().toString());
+    res.put("TODO","not implemented");
+    return res;
+  }
 }

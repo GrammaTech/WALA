@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An instruction in SSA form.
@@ -297,4 +298,7 @@ public abstract class SSAInstruction {
     else
       return false;
   }
+
+  public abstract JSONObject toJSON();
+
 }

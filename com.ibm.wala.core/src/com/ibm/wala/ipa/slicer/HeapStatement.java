@@ -13,6 +13,7 @@ package com.ibm.wala.ipa.slicer;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
+import com.ibm.wala.util.json.JSONObject;
 
 public abstract class HeapStatement extends Statement {
 
@@ -71,6 +72,13 @@ public abstract class HeapStatement extends Statement {
         return false;
       }
     }
+
+    @Override
+    public JSONObject toJSON() {
+      //TODO
+      return super.toJSON();
+      //return getKind().toString() + "," + getNode().getMethod().getSignature() + "," + getLocation().toJson() + "," + getCall();
+    }
   }
 
   public final static class HeapParamCallee extends HeapStatement {
@@ -102,6 +110,12 @@ public abstract class HeapStatement extends Statement {
     @Override
     public String toString() {
       return getKind().toString() + ":" + getNode() + " " + getLocation();
+    }
+
+    @Override
+    public JSONObject toJSON() {
+      //TODO
+      return super.toJSON();
     }
   }
 
@@ -148,6 +162,12 @@ public abstract class HeapStatement extends Statement {
         return false;
       }
     }
+
+    @Override
+    public JSONObject toJSON() {
+      //TODO
+      return super.toJSON();
+    }
   }
 
   public final static class HeapReturnCallee extends HeapStatement {
@@ -179,6 +199,12 @@ public abstract class HeapStatement extends Statement {
     @Override
     public String toString() {
       return getKind().toString() + ":" + getNode() + " " + getLocation();
+    }
+
+    @Override
+    public JSONObject toJSON() {
+      //TODO
+      return super.toJSON();
     }
   }
 

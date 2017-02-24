@@ -21,6 +21,7 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.util.intset.IntSet;
 import com.ibm.wala.util.intset.IntSetUtil;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * This context selector selects a context based on whether the receiver type
@@ -70,6 +71,14 @@ public class TargetMethodContextSelector implements ContextSelector {
       @Override
       public boolean equals(Object o) {
         return (o instanceof MethodDispatchContext) && ((MethodDispatchContext) o).getTargetMethod().equals(M);
+      }
+
+      @Override
+      public JSONObject toJSON() {
+        JSONObject res = new JSONObject();
+        res.put("class",this.getClass().toString());
+        res.put("TODO","not implemented");
+        return res;
       }
     }
     ;

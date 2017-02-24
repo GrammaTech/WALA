@@ -13,6 +13,7 @@ package com.ibm.wala.ipa.callgraph.propagation.cfa;
 import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.ipa.callgraph.ContextKey;
+import com.ibm.wala.util.json.JSONObject;
 
 public class CallStringContext implements Context {
   private final CallString cs;
@@ -46,5 +47,13 @@ public class CallStringContext implements Context {
     } else {
       return null;
     }
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().toString());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

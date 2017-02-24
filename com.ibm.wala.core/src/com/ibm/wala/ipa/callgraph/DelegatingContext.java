@@ -10,6 +10,8 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.callgraph;
 
+import com.ibm.wala.util.json.JSONObject;
+
 /**
  * A context that first checks with A, then defaults to B.
  */
@@ -68,6 +70,15 @@ public class DelegatingContext implements Context {
   @Override
   public String toString() {
     return "DelegatingContext [A=" + A + ", B=" + B + "]";
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().toString());
+    res.put("A", A.toJSON());
+    res.put("B", B.toJSON());
+    return res;
   }
   
   

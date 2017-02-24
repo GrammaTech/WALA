@@ -32,6 +32,7 @@ import com.ibm.wala.types.generics.ClassSignature;
 import com.ibm.wala.types.generics.TypeSignature;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.debug.Assertions;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.shrike.ShrikeClassReaderHandle;
 import com.ibm.wala.util.strings.Atom;
 import com.ibm.wala.util.strings.ImmutableByteArray;
@@ -418,5 +419,13 @@ public final class ShrikeClass extends JVMClass<IClassLoader> {
   @Override
   public Module getContainer() {
     return reader.getModuleEntry().getContainer();
+  }
+
+  @Override
+  public Object toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    res.put("name", this.getName().toString());
+    return res;
   }
 }

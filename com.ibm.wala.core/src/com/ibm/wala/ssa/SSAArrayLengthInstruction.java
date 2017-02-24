@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.wala.ssa;
 
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * SSA instruction representing v_x := arraylength v_y
@@ -119,4 +120,10 @@ public abstract class SSAArrayLengthInstruction extends SSAInstruction {
     return true;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAArrayLengthInstruction");
+    return res;
+  }
 }

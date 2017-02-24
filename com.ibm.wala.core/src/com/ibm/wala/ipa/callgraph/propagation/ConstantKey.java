@@ -76,4 +76,12 @@ public final class ConstantKey<T> implements InstanceKey {
   public Iterator<Pair<CGNode, NewSiteReference>> getCreationSites(CallGraph CG) {
     return EmptyIterator.instance();
   }
+
+  @Override
+  public String toJson() {
+    if (value == null)
+      return "(CONSTANTKEY,null)";
+    else
+      return "(CONSTANTKEY," + value + "," + value.getClass() + ")";
+  }
 }

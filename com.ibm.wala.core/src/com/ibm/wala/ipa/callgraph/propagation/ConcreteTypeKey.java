@@ -126,4 +126,9 @@ public final class ConcreteTypeKey implements InstanceKey {
       }
     };
   }
+
+  @Override
+  public String toJson() {
+    return "(CONCRETETYPEKEY, " + type + ")";
+  }
 }

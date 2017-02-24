@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.wala.ssa;
 
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A "catch" instruction, inserted at the head of a catch block, which assigns a pending exception object to a local variable.
@@ -103,4 +104,10 @@ public class SSAGetCaughtExceptionInstruction extends SSAInstruction {
     return true;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    return res;
+  }
 }

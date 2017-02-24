@@ -28,6 +28,7 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.types.annotations.Annotation;
 import com.ibm.wala.util.bytecode.BytecodeStream;
 import com.ibm.wala.util.debug.UnimplementedError;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.strings.Atom;
 
 /**
@@ -414,6 +415,15 @@ public class SyntheticMethod implements IMethod {
   @Override
   public Collection<Annotation> getAnnotations() {
      return Collections.emptySet();
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject ret = new JSONObject();
+    ret.put("type", "SyntheticMethod");
+    ret.put("TODO", "not implemented");
+    ret.put("signature", getSignature());
+    return ret;
   }
 
 }

@@ -13,6 +13,7 @@ package com.ibm.wala.ssa;
 import com.ibm.wala.classLoader.NewSiteReference;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An allocation instruction ("new") for SSA form.
@@ -169,4 +170,10 @@ public abstract class SSANewInstruction extends SSAInstruction {
     return true;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSANewInstruction");
+    return res;
+  }
 }

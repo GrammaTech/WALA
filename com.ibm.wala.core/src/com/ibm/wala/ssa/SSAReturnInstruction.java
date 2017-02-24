@@ -11,6 +11,8 @@
 
 package com.ibm.wala.ssa;
 
+import com.ibm.wala.util.json.JSONObject;
+
 /**
  * A return instruction.
  */
@@ -113,6 +115,13 @@ public class SSAReturnInstruction extends SSAInstruction {
   @Override
   public boolean isFallThrough() {
     return false;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAReturnInstruction");
+    return res;
   }
 
  }

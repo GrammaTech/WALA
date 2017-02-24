@@ -10,26 +10,37 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-
+import java.util.Map.Entry;
 import com.ibm.wala.analysis.stackMachine.AbstractIntStackMachine;
 import com.ibm.wala.cfg.ControlFlowGraph;
 import com.ibm.wala.cfg.cdg.ControlDependenceGraph;
 import com.ibm.wala.classLoader.CallSiteReference;
+import com.ibm.wala.classLoader.IMethod;
+import com.ibm.wala.classLoader.SyntheticMethod;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cfg.ExceptionPrunedCFG;
 import com.ibm.wala.ipa.cfg.PrunedCFG;
-import com.ibm.wala.ipa.modref.DelegatingExtendedHeapModel;
 import com.ibm.wala.ipa.modref.ExtendedHeapModel;
 import com.ibm.wala.ipa.modref.ModRef;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
@@ -52,6 +63,8 @@ import com.ibm.wala.ssa.SSANewInstruction;
 import com.ibm.wala.ssa.SSAPhiInstruction;
 import com.ibm.wala.ssa.SSAPiInstruction;
 import com.ibm.wala.ssa.SSAReturnInstruction;
+import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.collections.FilterIterator;
@@ -60,6 +73,7 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.Iterator2Collection;
 import com.ibm.wala.util.collections.Iterator2Iterable;
 import com.ibm.wala.util.collections.MapUtil;
+import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.config.SetOfClasses;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.debug.UnimplementedError;
@@ -71,20 +85,35 @@ import com.ibm.wala.util.intset.BitVectorIntSet;
 import com.ibm.wala.util.intset.IntIterator;
 import com.ibm.wala.util.intset.IntSet;
 import com.ibm.wala.util.intset.OrdinalSet;
+import com.ibm.wala.util.json.JSONArray;
+import com.ibm.wala.util.json.JSONObject;
+import com.ibm.wala.util.json.parser.JSONParser;
+import com.ibm.wala.util.json.parser.ParseException;
 
 /**
  * Program dependence graph for a single call graph node
  */
 public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
 
-/** BEGIN Custom change: control deps */                
-  public enum Dependency {CONTROL_DEP, DATA_AND_CONTROL_DEP};
-  
-  private final SlowSparseNumberedLabeledGraph<Statement, Dependency> delegate =
-    new SlowSparseNumberedLabeledGraph<Statement, Dependency>(Dependency.DATA_AND_CONTROL_DEP);
-/** END Custom change: control deps */                
+  /** BEGIN Custom change: control deps */
+  public enum Dependency {CONTROL_DEP, DATA_DEP, DATA_AND_CONTROL_DEP};
+
+  private SlowSparseNumberedLabeledGraph<Statement, Dependency> delegate =
+      new SlowSparseNumberedLabeledGraph<Statement, Dependency>(Dependency.DATA_DEP);
+
+  private SlowSparseNumberedLabeledGraph<Statement, Dependency> elided =
+      new SlowSparseNumberedLabeledGraph<Statement, Dependency>(Dependency.DATA_DEP);
+  /** END Custom change: control deps */
 
   private final static boolean VERBOSE = false;
+
+  private static final boolean EXTRA_EDGES = false;
+
+  private static final boolean INLINE_RESOLVABLE_CALLS = false;
+
+  private static final boolean USE_JSON_SUMMARIES = false;
+
+  private IR ir;
 
   private final CGNode node;
 
@@ -126,6 +155,13 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
 
   private boolean isPopulated = false;
 
+  private boolean useSummaries;
+
+  private int inlineThreshold;
+
+  private final Set<Statement> IncomingHeapDependenciesComputed;
+  private final Set<Statement> OutgoingHeapDependenciesComputed;
+
   /**
    * @param mod the set of heap locations which may be written (transitively) by this node. These are logically return values in the
    *          SDG.
@@ -134,8 +170,8 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
    */
   public PDG(final CGNode node, PointerAnalysis<T> pa, Map<CGNode, OrdinalSet<PointerKey>> mod,
       Map<CGNode, OrdinalSet<PointerKey>> ref, DataDependenceOptions dOptions, ControlDependenceOptions cOptions,
-      HeapExclusions exclusions, CallGraph cg, ModRef modRef) {
-    this(node, pa, mod, ref, dOptions, cOptions, exclusions, cg, modRef, false);
+      HeapExclusions exclusions, CallGraph cg, ModRef modRef, boolean useSummaries, int inlineThreshold) {
+    this(node, pa, mod, ref, dOptions, cOptions, exclusions, cg, modRef, false, useSummaries, inlineThreshold);
   }
 
   /**
@@ -146,7 +182,7 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
    */
   public PDG(final CGNode node, PointerAnalysis<T> pa, Map<CGNode, OrdinalSet<PointerKey>> mod,
       Map<CGNode, OrdinalSet<PointerKey>> ref, DataDependenceOptions dOptions, ControlDependenceOptions cOptions,
-      HeapExclusions exclusions, CallGraph cg, ModRef modRef, boolean ignoreAllocHeapDefs) {
+      HeapExclusions exclusions, CallGraph cg, ModRef modRef, boolean ignoreAllocHeapDefs, boolean useSummaries, int inlineThreshold) {
 
     super();
     if (node == null) {
@@ -163,24 +199,568 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
     this.modRef = modRef;
     this.ref = ref;
     this.ignoreAllocHeapDefs = ignoreAllocHeapDefs;
+    this.inlineThreshold = inlineThreshold;
+    this.useSummaries = useSummaries;
+    this.IncomingHeapDependenciesComputed = new HashSet<Statement>();
+    this.OutgoingHeapDependenciesComputed = new HashSet<Statement>();
+    this.ir = node.getIR();
   }
 
   /**
    * WARNING: Since we're using a {@link HashMap} of {@link SSAInstruction}s, and equals() of {@link SSAInstruction} assumes a
    * canonical representative for each instruction, we <bf>must</bf> ensure that we use the same IR object throughout
    * initialization!!
+   * @throws FileNotFoundException
    */
   private void populate() {
     if (!isPopulated) {
+      populate_nosimplify();
+      simplify();
+    }
+  }
+
+  private void populateFromJSON(String summary) {
+    JSONParser jsonParser = new JSONParser();
+    JSONObject jsonSummary = null;
+    try {
+      jsonSummary = (JSONObject) jsonParser.parse(new FileReader(summary));
+    } catch (IOException | ParseException e) {
+      e.printStackTrace();
+    }
+    Map<Integer,Statement> idToStatement = new HashMap<Integer,Statement>();
+    JSONArray statements = (JSONArray) jsonSummary.get("statements");
+
+    List<Statement> paramCalleeList = new ArrayList<Statement>();
+    List<Statement> returnList = new ArrayList<Statement>();
+
+    Map<String,IMethod> SignatureToIMethod = new HashMap<String,IMethod>();
+    Iterator<CGNode> nodesIt = cg.iterator();
+    while (nodesIt.hasNext()) {
+      CGNode n = nodesIt.next();
+      String s = n.getMethod().getSignature();
+      SignatureToIMethod.put(s, n.getMethod());
+    }
+
+    for (Object o : statements) {
+      JSONObject statement = (JSONObject) o;
+      Statement s = null;
+      SSAAbstractInvokeInstruction invoke = null;
+      Collection<Statement> rets = null;
+
+      JSONObject jsonCGNode = (JSONObject) statement.get("CGNode");
+      JSONObject jsonIMethod = (JSONObject) jsonCGNode.get("method");
+      JSONObject jsonContext = (JSONObject) jsonCGNode.get("context");
+
+      CGNode curNode = cg.getNode(SignatureToIMethod.get(jsonIMethod.get("signature")), Everywhere.EVERYWHERE);
+
+      switch ((String) statement.get("Kind")) {
+      case "NORMAL":
+        s = new NormalStatement(curNode, ((Long)statement.get("instructionIndex")).intValue());
+        SSAInstruction inst = ((NormalStatement)s).getInstruction();
+        if (inst instanceof SSAAbstractInvokeInstruction) {
+          CallSiteReference cs = ((SSAAbstractInvokeInstruction)inst).getCallSite();
+          callSite2Statement.put(cs, s);
+          MapUtil.findOrCreateSet(callerParamStatements, cs);
+          MapUtil.findOrCreateSet(callerReturnStatements, cs);
+        }
+        break;
+      case "PARAM_CALLEE":
+        s = new ParamCallee(curNode, ((Long)statement.get("valueNumber")).intValue());
+        paramCalleeList.add(s);
+        break;
+      case "NORMAL_RET_CALLEE":
+        s = new NormalReturnCallee(curNode);
+        returnList.add(s);
+        break;
+      case "PARAM_CALLER":
+        s = new ParamCaller(curNode, ((Long)statement.get("instructionIndex")).intValue(), ((Long)statement.get("valueNumber")).intValue());
+        invoke =((ParamCaller)s).getInstruction();
+        Collection<Statement> params = MapUtil.findOrCreateSet(callerParamStatements, invoke.getCallSite());
+        params.add(s);
+        break;
+      case "NORMAL_RET_CALLER":
+        s = new NormalReturnCaller(curNode, ((Long)statement.get("instructionIndex")).intValue());
+        invoke = ((NormalReturnCaller)s).getInstruction();
+        rets = MapUtil.findOrCreateSet(callerReturnStatements, invoke.getCallSite());
+        rets.add(s);
+        break;
+      case "EXC_RET_CALLER":
+        s = new ExceptionalReturnCaller(curNode, ((Long)statement.get("instructionIndex")).intValue());
+        invoke = ((ExceptionalReturnCaller)s).getInstruction();
+        rets = MapUtil.findOrCreateSet(callerReturnStatements, invoke.getCallSite());
+        rets.add(s);
+        break;
+      case "EXC_RET_CALLEE":
+        s = new ExceptionalReturnCallee(curNode);
+        returnList.add(s);
+        break;
+      case "METHOD_ENTRY":
+        s = new MethodEntryStatement(curNode);
+        break;
+      case "METHOD_EXIT":
+        s = new MethodExitStatement(curNode);
+        break;
+      default:
+        throw new IllegalArgumentException("JSON parsing not implemented " + (String) statement.get("Kind"));
+      }
+      delegate.addNode(s);
+      idToStatement.put(((Long)statement.get("id")).intValue(), s);
+    }
+
+    paramCalleeStatements = new Statement[paramCalleeList.size()];
+    paramCalleeList.toArray(paramCalleeStatements);
+    returnStatements = new Statement[returnList.size()];
+    returnList.toArray(returnStatements);
+
+    JSONArray dataDeps = (JSONArray) jsonSummary.get("datadeps");
+    for (Object o : dataDeps) {
+      JSONObject dep = (JSONObject) o;
+      int src = ((Long)dep.get("src")).intValue();
+      int dst = ((Long)dep.get("dst")).intValue();
+      delegate.addEdge(idToStatement.get(src), idToStatement.get(dst), Dependency.DATA_DEP);
+    }
+    JSONArray controlDeps = (JSONArray) jsonSummary.get("controldeps");
+    for (Object o : controlDeps) {
+      JSONObject dep = (JSONObject) o;
+      int src = ((Long)dep.get("src")).intValue();
+      int dst = ((Long)dep.get("dst")).intValue();
+      delegate.addEdge(idToStatement.get(src), idToStatement.get(dst), Dependency.CONTROL_DEP);
+    }
+    try {
+      DumpDotPDG(delegate, "reconstructed_pdg_" + node.getMethod().getDeclaringClass().getName().toString().replaceAll("/", ".") + "." + node.getMethod().getName().toString() + ".dot");
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void populate_nosimplify() {
+    if (!isPopulated) {
       // ensure that we keep the single, canonical IR live throughout initialization, while the instructionIndices map
       // is live.
-      IR ir = node.getIR();
+      //IR ir = node.getIR();
       isPopulated = true;
+
+      String summary = getJSONFileName();
+      File f = new File(summary);
+      if (USE_JSON_SUMMARIES && f.exists() && node.getContext() instanceof Everywhere) {
+        System.err.println("building PDG from summary " + summary + " in context " + node.getContext());
+        populateFromJSON(summary);
+        return;
+      }
 
       Map<SSAInstruction, Integer> instructionIndices = computeInstructionIndices(ir);
       createNodes(ref, cOptions, ir);
       createScalarEdges(cOptions, ir, instructionIndices);
+
+
+      if (pa != null) {
+        Iterator<Statement> it = delegate.iterator();
+        while (it.hasNext()) {
+          Statement stmt = it.next();
+          computeIncomingHeapDependencies(stmt);
+          computeOutgoingHeapDependencies(stmt);
+        }
+      }
     }
+  }
+
+  private void simplify() {
+    if (useSummaries && ClassLoaderReference.Primordial.equals(
+        node.getMethod().getDeclaringClass().getClassLoader().getReference())) {
+      try {
+        DumpDotPDG(delegate, "pdg_" + node.getMethod().getDeclaringClass().getName().toString().replaceAll("/", ".") + "." + node.getMethod().getName().toString() + ".dot");
+        if (INLINE_RESOLVABLE_CALLS) {
+          inlineResolvableCalls(inlineThreshold);
+          DumpDotPDG(delegate, "inlined_pdg_" + node.getMethod().getDeclaringClass().getName().toString().replaceAll("/", ".") + "." + node.getMethod().getName().toString() + ".dot");
+        }
+        computeElided();
+        if (node.getContext() instanceof Everywhere) {
+          DumpDotPDG(elided, "elided_pdg_" + node.getMethod().getDeclaringClass().getName().toString().replaceAll("/", ".") + "." + node.getMethod().getName().toString() + ".dot");
+          DumpSummary(elided);
+        }
+        delegate = elided;
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public boolean isStaticallyResolvable(CallSiteReference cs) {
+    boolean resolvable = false;
+    MethodReference mref = cs.getDeclaredTarget();
+    Set<IMethod> methods = cg.getClassHierarchy().getPossibleTargets(mref);
+    if (methods.size() == 1) {
+      IMethod m = methods.iterator().next();
+      if (m instanceof SyntheticMethod) {
+        return false;
+      }
+      if (ClassLoaderReference.Application.equals(
+          m.getDeclaringClass().getClassLoader().getReference())) {
+        return false;
+      }
+      // TODO should return true also if the class is marked final
+      if (cs.isStatic()
+          || m.isPrivate()
+          || m.isFinal()
+          || m.isInit()
+          || m.isClinit()
+          || m.getDeclaringClass().isArrayClass()
+          || m.getDeclaringClass().isPrivate()
+          || m.getDeclaringClass().getName().toString().equals("Ljava/lang/String")
+          ) {
+        resolvable = true;
+      }
+    }
+    return resolvable;
+  }
+
+  private void inlineResolvableCalls(int threshold) {
+    if (threshold <= 0) {
+      return;
+    }
+    List<Pair<CallSiteReference,Integer>> worklist = new ArrayList<Pair<CallSiteReference,Integer>>();
+    for (CallSiteReference cs : callSite2Statement.keySet()) {
+      worklist.add(Pair.make(cs,threshold));
+    }
+    while (!worklist.isEmpty()) {
+      Pair<CallSiteReference,Integer> p = worklist.remove(0);
+      CallSiteReference cs = p.fst;
+      if (isStaticallyResolvable(cs) && p.snd > 0) {
+        Statement cs_stmt = callSite2Statement.get(cs);
+        Set<CGNode> cgnode = cg.getNodes(cs.getDeclaredTarget());
+        if (cgnode.size() != 1) { continue; }
+        cs_stmt.isKeyNode = false;
+        CGNode node = cgnode.iterator().next();
+
+        PDG<T> pdg = new PDG<T>(node, pa, mod, ref, dOptions, cOptions, exclusions, cg, modRef, true, p.snd-1);
+        pdg.populate_nosimplify();
+        // adding all nodes and edges from the pdg
+        Iterator<Statement> stmts = pdg.delegate.iterator();
+        while (stmts.hasNext()) {
+          Statement stmt = stmts.next();
+          switch (stmt.getKind()) {
+          case METHOD_ENTRY:
+          case METHOD_EXIT:
+            stmt.isKeyNode = false;
+          default:
+            delegate.addNode(stmt);
+            //pdg.computeIncomingHeapDependencies(stmt);
+            //pdg.computeOutgoingHeapDependencies(stmt);
+          }
+        }
+        callerParamStatements.putAll(pdg.callerParamStatements);
+        callerReturnStatements.putAll(pdg.callerReturnStatements);
+
+        for (CallSiteReference pdg_cs : pdg.callSite2Statement.keySet()) {
+          if (callSite2Statement.containsKey(pdg_cs)) {
+            System.err.println("callsite " + pdg_cs + " already exists");
+          }
+          callSite2Statement.put(pdg_cs,pdg.callSite2Statement.get(pdg_cs));
+          // TODO : fix this by changing the HashMaps <CallSiteReference, ...> (e.g. callSite2Statement)
+          // inlining might create multiple invoke statements with the same callSiteReference and it screws up the hashmaps
+          //worklist.add(Pair.make(pdg_cs,p.snd-1));
+        }
+
+        stmts = pdg.iterator();
+        while (stmts.hasNext()) {
+          Statement stmt = stmts.next();
+          Iterator<Statement> succs = pdg.delegate.getSuccNodes(stmt);
+          while (succs.hasNext()) {
+            Statement succ = succs.next();
+            if (!delegate.containsNode(succ)) {
+              delegate.addNode(succ);
+            }
+            Set<Dependency> dependencies = (Set<Dependency>)delegate.getEdgeLabels(stmt, succ);
+            for (Dependency d : dependencies) {
+              delegate.addEdge(stmt, succ, d);
+            }
+          }
+        }
+
+        // linking caller params and callee params
+        Statement[] ParamCallerSet = callerParamStatements.get(cs).toArray(new Statement[0]);
+        Statement[] ParamCalleeSet = pdg.getParamCalleeStatements();
+
+        for (int i = 0; i < ParamCalleeSet.length; i++) {
+          int valueNumber = ((ParamCallee)ParamCalleeSet[i]).valueNumber;
+          for (int j = 0; j < ParamCallerSet.length; j++) {
+            if (valueNumber == ((ParamCaller)ParamCallerSet[j]).valueNumber) {
+              delegate.addEdge(cs_stmt, ParamCallerSet[j], Dependency.DATA_DEP);
+              ParamCallerSet[j].isKeyNode = false;
+              ParamCalleeSet[i].isKeyNode = false;
+              delegate.addEdge(ParamCallerSet[j], ParamCalleeSet[i], Dependency.DATA_DEP);
+            }
+          }
+        }
+
+        // linking callee return to caller return
+        Statement[] ReturnCallerSet = callerReturnStatements.get(cs).toArray(new Statement[0]);
+        Statement[] ReturnCalleeSet = pdg.getReturnStatements();
+
+        for (int i = 0; i < ReturnCalleeSet.length; i++) {
+          for (int j = 0; j < ReturnCallerSet.length; j++) {
+            if ((ReturnCallerSet[j] instanceof NormalReturnCaller && ReturnCalleeSet[i] instanceof NormalReturnCallee)
+                || (ReturnCallerSet[j] instanceof ExceptionalReturnCaller && ReturnCalleeSet[i] instanceof ExceptionalReturnCallee)) {
+              delegate.addEdge(cs_stmt, ReturnCallerSet[j], Dependency.DATA_DEP);
+              ReturnCallerSet[j].isKeyNode = false;
+              ReturnCalleeSet[i].isKeyNode = false;
+              delegate.addEdge(ReturnCalleeSet[i], ReturnCallerSet[j], Dependency.DATA_DEP);
+            }
+          }
+        }
+
+        callSite2Statement.remove(cs);
+        callerParamStatements.remove(cs);
+        callerReturnStatements.remove(cs);
+      }
+    }
+  }
+
+  private void computeElided() {
+    Iterator<Statement> it = delegate.iterator();
+    Set<Statement> keyNodes = new HashSet<Statement>();
+    while (it.hasNext()) {
+      Statement stmt = it.next();
+      if (stmt.isKeyNode) {
+        keyNodes.add(stmt);
+        elided.addNode(stmt);
+      }
+    }
+    for (Statement key : keyNodes) {
+      for (Entry<Statement, Set<? extends Dependency>> dst: elidedFlow(key,keyNodes).entrySet()) {
+        for (Dependency dep : dst.getValue()) {
+          elided.addEdge(key, dst.getKey(), dep);
+        }
+      }
+    }
+  }
+
+  private Map<Statement,Set<? extends Dependency>> elidedFlow(Statement key, Set<Statement> keyNodes) {
+    Map<Statement,Set<? extends Dependency>> result = new HashMap<Statement,Set<? extends Dependency>>();
+    Set<Statement> seen = new HashSet<Statement>();
+    Queue<Pair<Statement,Set<Dependency>>> frontier = new LinkedList<Pair<Statement,Set<Dependency>>>();
+    Set<Dependency> d = new HashSet<Dependency>();
+    frontier.add(Pair.make(key,d));
+    while (!frontier.isEmpty()) {
+      Pair<Statement,Set<Dependency>> f = frontier.remove();
+      seen.add(f.fst);
+
+      Iterator<? extends Statement> succs = delegate.getSuccNodes(f.fst);
+      while (succs.hasNext()) {
+        Statement succ = succs.next();
+        Set<Dependency> dependencies = (Set<Dependency>)delegate.getEdgeLabels(f.fst, succ);
+        dependencies.addAll(f.snd);
+        if (succ.isKeyNode) {
+          result.put(succ, dependencies);
+        } else if (!seen.contains(succ)){
+          frontier.add(Pair.make(succ,dependencies));
+        }
+      }
+    }
+    return result;
+  }
+
+  private String getJSONFileName() {
+    return "summary_" + node.getMethod().getSignature().replaceAll("/", ".") + ".json";
+  }
+
+  private void DumpSummary(SlowSparseNumberedLabeledGraph<Statement, Dependency> graph) throws IOException {
+    String filename = getJSONFileName();
+
+    JSONArray statements = new JSONArray();
+    JSONArray ControlDeps = new JSONArray();
+    JSONArray DataDeps = new JSONArray();
+
+    Map<Statement,Integer> statementsIds = new HashMap<Statement,Integer>();
+
+    Iterator<Statement> it = graph.iterator();
+    int i = 0;
+    while (it.hasNext()) {
+      Statement stmt = it.next();
+      statementsIds.put(stmt, i);
+      JSONObject jsonStmt = stmt.toJSON();
+      jsonStmt.put("id", i);
+      statements.add(jsonStmt);
+      i++;
+    }
+
+    it = graph.iterator();
+    while (it.hasNext()) {
+      Statement stmt = it.next();
+
+      Iterator<Statement> succs = graph.getSuccNodes(stmt);
+      while (succs.hasNext()) {
+        Statement succ = succs.next();
+        Set<? extends Dependency> labels = graph.getEdgeLabels(stmt, succ);
+        JSONObject jsonEdge = new JSONObject();
+        jsonEdge.put("src", statementsIds.get(stmt));
+        jsonEdge.put("dst", statementsIds.get(succ));
+        if (labels.contains(Dependency.DATA_DEP) || labels.contains(Dependency.DATA_AND_CONTROL_DEP)) {
+          DataDeps.add(jsonEdge);
+        }
+        if (labels.contains(Dependency.CONTROL_DEP) || labels.contains(Dependency.DATA_AND_CONTROL_DEP)) {
+          ControlDeps.add(jsonEdge);
+        }
+      }
+    }
+
+    PrintWriter writer = null;
+    writer = new PrintWriter(filename);
+    JSONObject json = new JSONObject();
+    json.put("statements", statements);
+    json.put("datadeps", DataDeps);
+    json.put("controldeps", ControlDeps);
+    json.writeJSONString(writer);
+    writer.close();
+  }
+
+  private void DumpDotPDG(SlowSparseNumberedLabeledGraph<Statement, Dependency> graph, String filename) throws FileNotFoundException {
+    PrintWriter writer = null;
+    writer = new PrintWriter(filename);
+    String NEWLINE = "&#10;";
+
+    writer.println("digraph reachability_info {");
+
+    HashMap<Statement, Integer> numbering = new HashMap<Statement, Integer>();
+    int nodeNumber = 1;
+    Iterator<Statement> it = graph.iterator();
+    while (it.hasNext()) {
+      Statement stmt = it.next();
+      numbering.put(stmt, nodeNumber++);
+    }
+
+    it = graph.iterator();
+    while (it.hasNext()) {
+      Statement stmt = it.next();
+      String args = "shape=circle";
+      String color = "d3d7cf";
+      String transparency = "DD";
+      String style = "filled";
+      String tooltip = stmt.toString();
+      if (cg.getClassHierarchy()
+          .getScope()
+          .isApplicationClass(stmt.getNode().getMethod().getDeclaringClass())) {
+        transparency = "DD";
+      } else {
+      }
+      switch (stmt.getKind()) {
+      case NORMAL:
+        color = "d3d7cf";
+        NormalStatement nstmt = (NormalStatement) stmt;
+        if (nstmt.getInstruction() instanceof SSAAbstractInvokeInstruction) {
+          color = "c19a6b";
+        }
+        if (nstmt.getInstruction() instanceof SSAFieldAccessInstruction) {
+          SSAFieldAccessInstruction s = (SSAFieldAccessInstruction)nstmt.getInstruction();
+          if (heapModel != null && s.getRef() > 0) {
+            tooltip += NEWLINE + "PointerKey:::" + heapModel.getPointerKeyForLocal(node, s.getRef());
+            Set<PointerKey> pkeys = modRef.getRef(node, heapModel, pa, s, exclusions);
+            tooltip += NEWLINE + NEWLINE + "Result of getRef:";
+            for (PointerKey p : pkeys) {
+              tooltip += NEWLINE + p;
+            }
+          }
+          if (heapModel != null && s.getRef() > 0) {
+            Set<PointerKey> pkeys = modRef.getMod(node, heapModel, pa, s, exclusions);
+            tooltip += NEWLINE + NEWLINE + "Result of getMod:";
+            for (PointerKey p : pkeys) {
+              tooltip += NEWLINE + p;
+            }
+          }
+          color = "4997d0";
+        }
+        if (nstmt.getInstruction() instanceof SSANewInstruction) {
+          if (heapModel != null) {
+            SSANewInstruction s = (SSANewInstruction)nstmt.getInstruction();
+            InstanceKey i = heapModel.getInstanceKeyForAllocation(node, s.getNewSite());
+            tooltip += NEWLINE + NEWLINE + "InstanceKey:" + NEWLINE + i;
+            color = "fad6a5";
+          }
+        }
+        break;
+      case PHI:
+      case PI:
+        color = "d3d7cf";
+        break;
+      case PARAM_CALLEE:
+        ParamCallee pcallee = (ParamCallee)stmt;
+        if (heapModel != null) {
+          tooltip += NEWLINE + "PointerKey::" + NEWLINE + heapModel.getPointerKeyForLocal(node, pcallee.valueNumber);
+        }
+        style += ",dashed";
+        color = "e9d66b";
+        break;
+      case PARAM_CALLER:
+        ParamCaller pcaller = (ParamCaller)stmt;
+        if (heapModel != null) {
+          tooltip += NEWLINE + "PointerKey::" + NEWLINE + heapModel.getPointerKeyForLocal(node, pcaller.valueNumber);
+        }
+        color = "e9d66b";
+        break;
+      case NORMAL_RET_CALLEE:
+        if (heapModel != null) {
+          tooltip += NEWLINE + "PointerKey::" + NEWLINE + heapModel.getPointerKeyForReturnValue(node);
+        }
+        style += ",dashed";
+        color = "e9d66b";
+        break;
+      case NORMAL_RET_CALLER:
+        NormalReturnCaller nretcaller = (NormalReturnCaller) stmt;
+        if (heapModel != null) {
+          tooltip += NEWLINE + "PointerKey::" + NEWLINE + heapModel.getPointerKeyForReturnValue(nretcaller.getNode());
+        }
+        color = "e9d66b";
+        break;
+      case EXC_RET_CALLEE:
+        style += ",dashed";
+      case EXC_RET_CALLER:
+      case CATCH:
+        color = "e32636";
+        break;
+      case HEAP_PARAM_CALLEE:
+      case HEAP_RET_CALLEE:
+        style += ",dashed";
+      case HEAP_PARAM_CALLER:
+      case HEAP_RET_CALLER:
+        color = "915c83";
+        HeapStatement hstmt = (HeapStatement) stmt;
+        tooltip += NEWLINE + "PointerKey:::" + hstmt.getLocation();
+        break;
+      case METHOD_ENTRY:
+      case METHOD_EXIT:
+        color = "8db600";
+        break;
+      }
+      args += ",style=\"" + style + "\",fillcolor=\"#" + color + transparency + "\"";
+      args +=
+          ",tooltip=\""
+              + tooltip
+              + "\"";
+      writer.println(numbering.get(stmt) + "[" + args + "]");
+    }
+
+    it = graph.iterator();
+    while (it.hasNext()) {
+      Statement stmt = it.next();
+      Iterator<Statement> succs = graph.getSuccNodes(stmt);
+      while (succs.hasNext()) {
+        Statement succ = succs.next();
+        Set<? extends Dependency> labels = graph.getEdgeLabels(stmt, succ);
+        String args = "";
+        if (labels.contains(Dependency.DATA_DEP) || labels.contains(Dependency.DATA_AND_CONTROL_DEP)) {
+          args += "color=blue,";
+        }
+        if (!labels.contains(Dependency.CONTROL_DEP) && !labels.contains(Dependency.DATA_AND_CONTROL_DEP)) {
+          args += "style=dotted,";
+        }
+        args += "penwidth=1.0";
+        writer.println(numbering.get(stmt) + " -> " + numbering.get(succ) + "[" + args + "]");
+
+      }
+    }
+
+    writer.println("}");
+    writer.close();
   }
 
   private void createScalarEdges(ControlDependenceOptions cOptions, IR ir, Map<SSAInstruction, Integer> instructionIndices) {
@@ -204,21 +784,36 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
    * a given call
    */
   public Set<Statement> getCallStatements(SSAAbstractInvokeInstruction call) throws IllegalArgumentException {
+    populate();
+    if (!callSite2Statement.containsKey(call.getCallSite())) {
+      return new HashSet<Statement>();
+    }
     Set<Statement> callerParamStatements = getCallerParamStatements(call);
     Set<Statement> result = HashSetFactory.make(callerParamStatements.size() + 1);
     result.addAll(callerParamStatements);
+
     result.add(callSite2Statement.get(call.getCallSite()));
     return result;
+  }
+
+  public Map<CallSiteReference,Statement> getCallSiteStatementsMap() {
+    populate();
+    return callSite2Statement;
   }
 
   /**
    * return the set of all NORMAL_RETURN_CALLER and HEAP_RETURN_CALLER statements associated with a given call.
    */
   public Set<Statement> getCallerReturnStatements(SSAAbstractInvokeInstruction call) throws IllegalArgumentException {
+    populate();
     if (call == null) {
       throw new IllegalArgumentException("call == null");
     }
     populate();
+    if (!callerReturnStatements.containsKey(call.getCallSite())) {
+      System.err.println("PDG does not contain callsite " + node + " " + call);
+      throw new IllegalArgumentException("PDG does not contain callsite " + node + " " + call);
+    }
     return callerReturnStatements.get(call.getCallSite());
   }
 
@@ -274,18 +869,23 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
           // as
           // being control dependent on nothing ... they only represent pure
           // data dependence. So, I'm commenting out the following.
-          // if (s instanceof SSAAbstractInvokeInstruction) {
-          // SSAAbstractInvokeInstruction call = (SSAAbstractInvokeInstruction)
-          // s;
-          // for (Statement st : callerParamStatements.get(call.getCallSite()))
-          // {
-          // addEdge(src, st);
-          // }
-          // for (Statement st : callerReturnStatements.get(call.getCallSite()))
-          // {
-          // addEdge(src, st);
-          // }
-          // }
+          if (EXTRA_EDGES) {
+            if (s instanceof SSAAbstractInvokeInstruction) {
+              SSAAbstractInvokeInstruction call = (SSAAbstractInvokeInstruction)
+                  s;
+              for (Statement st : callerParamStatements.get(call.getCallSite()))
+              {
+                // JULIEN : switched st <-> src
+                delegate.addEdge(st, src, Dependency.CONTROL_DEP);
+
+              }
+              for (Statement st : callerReturnStatements.get(call.getCallSite()))
+              {
+                delegate.addEdge(src, st, Dependency.CONTROL_DEP);
+              }
+            }
+          }
+
         }
       }
       // add edges for every control-dependent statement in the IR, if there are
@@ -299,10 +899,10 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
             if (st != null) {
               Statement dest = ssaInstruction2Statement(st, ir, instructionIndices);
               assert src != null;
-              delegate.addEdge(src, dest);
-/** BEGIN Custom change: control deps */                
+              //delegate.addEdge(src, dest, Dependency.DATA_DEP);
+              /** BEGIN Custom change: control deps */
               delegate.addEdge(src, dest, Dependency.CONTROL_DEP);
-/** END Custom change: control deps */                
+              /** END Custom change: control deps */
             }
           }
         }
@@ -318,20 +918,21 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
     for (ISSABasicBlock exitDom : Iterator2Iterable.make(dom.dominators(controlFlowGraph.exit()))) {
       for (SSAInstruction st : exitDom) {
         Statement dest = ssaInstruction2Statement(st, ir, instructionIndices);
-        delegate.addEdge(methodEntry, dest);
-/** BEGIN Custom change: control deps */                
+        //delegate.addEdge(methodEntry, dest, Dependency.DATA_DEP);
+        /** BEGIN Custom change: control deps */
         delegate.addEdge(methodEntry, dest, Dependency.CONTROL_DEP);
-/** END Custom change: control deps */                
+        /** END Custom change: control deps */
       }
     }
     // add CD from method entry to all callee parameter assignments
     // SJF: Alexey and I think that we should just define ParamStatements as
     // being control dependent on nothing ... they only represent pure
     // data dependence. So, I'm commenting out the following.
-    // for (int i = 0; i < paramCalleeStatements.length; i++) {
-    // addEdge(methodEntry, paramCalleeStatements[i]);
-    // }
-
+    if (EXTRA_EDGES) {
+      for (int i = 0; i < paramCalleeStatements.length; i++) {
+        delegate.addEdge(methodEntry, paramCalleeStatements[i], Dependency.CONTROL_DEP);
+      }
+    }
     /**
      * JTD: While phi nodes live in a particular basic block, they represent a meet of values from multiple blocks. Hence, they are
      * really like multiple statements that are control dependent in the manner of the predecessor blocks. When the slicer is
@@ -360,25 +961,25 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
               SSAInstruction pss = ir.getInstructions()[pb.getLastInstructionIndex()];
               assert pss != null;
               Statement pst = ssaInstruction2Statement(pss, ir, instructionIndices);
-              delegate.addEdge(pst, phiSt);
-/** BEGIN Custom change: control deps */                
+              //delegate.addEdge(pst, phiSt, Dependency.DATA_DEP);
+              /** BEGIN Custom change: control deps */
               delegate.addEdge(pst, phiSt, Dependency.CONTROL_DEP);
-/** END Custom change: control deps */                
+              /** END Custom change: control deps */
             } else {
               for (Iterator<? extends ISSABasicBlock> cdps = cdg.getPredNodes(pb); cdps.hasNext();) {
                 ISSABasicBlock cpb = cdps.next();
-/** BEGIN Custom change: control deps */                
+                /** BEGIN Custom change: control deps */
                 if (cpb.getLastInstructionIndex() < 0) {
                   continue;
                 }
-/** END Custom change: control deps */                
+                /** END Custom change: control deps */
                 SSAInstruction cps = ir.getInstructions()[cpb.getLastInstructionIndex()];
                 assert cps != null : "unexpected null final instruction for CDG predecessor " + cpb + " in node " + node;
                 Statement cpst = ssaInstruction2Statement(cps, ir, instructionIndices);
-                delegate.addEdge(cpst, phiSt);
-/** BEGIN Custom change: control deps */                
+                //delegate.addEdge(cpst, phiSt, Dependency.DATA_DEP);
+                /** BEGIN Custom change: control deps */
                 delegate.addEdge(cpst, phiSt, Dependency.CONTROL_DEP);
-/** END Custom change: control deps */                
+                /** END Custom change: control deps */
               }
             }
             phiUseIndex++;
@@ -428,9 +1029,9 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
               SSAInstruction st = instructions[pb.getLastInstructionIndex()];
 
               if (st instanceof SSAAbstractInvokeInstruction) {
-                delegate.addEdge(new ExceptionalReturnCaller(node, pb.getLastInstructionIndex()), c);
+                delegate.addEdge(new ExceptionalReturnCaller(node, pb.getLastInstructionIndex()), c, Dependency.DATA_DEP);
               } else if (st instanceof SSAAbstractThrowInstruction) {
-                delegate.addEdge(ssaInstruction2Statement(st, ir, instructionIndices), c);
+                delegate.addEdge(ssaInstruction2Statement(st, ir, instructionIndices), c, Dependency.DATA_DEP);
               }
             }
           }
@@ -482,7 +1083,7 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
                 }
               }
               Statement u = ssaInstruction2Statement(use, ir, instructionIndices);
-              delegate.addEdge(s, u);
+              delegate.addEdge(s, u, Dependency.DATA_DEP);
             }
           }
         }
@@ -519,13 +1120,13 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
             }
           }
           Statement u = ssaInstruction2Statement(use, ir, instructionIndices);
-          delegate.addEdge(s, u);
+          delegate.addEdge(s, u, Dependency.DATA_DEP);
         }
         break;
       }
       case NORMAL_RET_CALLEE:
         for (NormalStatement ret : computeReturnStatements(ir)) {
-          delegate.addEdge(ret, s);
+          delegate.addEdge(ret, s, Dependency.DATA_DEP);
         }
         break;
       case EXC_RET_CALLEE:
@@ -542,10 +1143,10 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
           if (pei instanceof SSAAbstractInvokeInstruction) {
             if (! dOptions.isIgnoreExceptions()) {
               Statement st = new ExceptionalReturnCaller(node, index);
-              delegate.addEdge(st, s);
+              delegate.addEdge(st, s, Dependency.DATA_DEP);
             }
           } else {
-            delegate.addEdge(new NormalStatement(node, index), s);
+            delegate.addEdge(new NormalStatement(node, index), s, Dependency.DATA_DEP);
           }
         }
         break;
@@ -558,7 +1159,7 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
         if (vn > -1) {
           if (ir.getSymbolTable().isParameter(vn)) {
             Statement a = new ParamCallee(node, vn);
-            delegate.addEdge(a, pac);
+            delegate.addEdge(a, pac, Dependency.DATA_DEP);
           } else {
             SSAInstruction d = DU.getDef(vn);
             if (dOptions.isTerminateAtCast() && (d instanceof SSACheckCastInstruction)) {
@@ -570,21 +1171,21 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
                 if (vn == call.getException()) {
                   if (! dOptions.isIgnoreExceptions()) {
                     Statement st = new ExceptionalReturnCaller(node, instructionIndices.get(d));
-                    delegate.addEdge(st, pac);
+                    delegate.addEdge(st, pac, Dependency.DATA_DEP);
                   }
                 } else {
                   Statement st = new NormalReturnCaller(node, instructionIndices.get(d));
-                  delegate.addEdge(st, pac);
+                  delegate.addEdge(st, pac, Dependency.DATA_DEP);
                 }
               } else {
                 Statement ds = ssaInstruction2Statement(d, ir, instructionIndices);
-                delegate.addEdge(ds, pac);
+                delegate.addEdge(ds, pac, Dependency.DATA_DEP);
               }
             }
           }
         }
       }
-        break;
+      break;
 
       case HEAP_RET_CALLEE:
       case HEAP_RET_CALLER:
@@ -653,7 +1254,7 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
    * Create heap data dependence edges in this PDG relevant to a particular {@link PointerKey}.
    */
   private void createHeapDataDependenceEdges(final PointerKey pk) {
-
+    //System.out.println("createHeapDataDependenceEdges" + pk);
     if (locationsHandled.contains(pk)) {
       return;
     } else {
@@ -669,13 +1270,13 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
     }
 
     // It's OK to create a new IR here; we're not keeping any hashing live up to this point
-    IR ir = node.getIR();
+    //IR ir = node.getIR();
     if (ir == null) {
       return;
     }
 
     if (VERBOSE) {
-      System.err.println("Location " + pk);
+      System.out.println("Location " + pk);
     }
 
     // in reaching defs calculation, exclude heap statements that are
@@ -694,7 +1295,6 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
 
     Map<Statement, OrdinalSet<Statement>> heapReachingDefs = new HeapReachingDefs<T>(modRef, heapModel).computeReachingDefs(node, ir, pa, mod,
         relevantStatements, new HeapExclusions(SetComplement.complement(new SingletonSet(t))), cg);
-
     for (Statement st : heapReachingDefs.keySet()) {
       switch (st.getKind()) {
       case NORMAL:
@@ -704,11 +1304,16 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
         OrdinalSet<Statement> defs = heapReachingDefs.get(st);
         if (defs != null) {
           for (Statement def : defs) {
-            delegate.addEdge(def, st);
+            if (delegate.containsNode(def) && delegate.containsNode(st)) {
+              delegate.addEdge(def, st, Dependency.DATA_DEP);
+            } else {
+              // TODO
+              System.err.println("missing nodes in graph");
+            }
           }
         }
       }
-        break;
+      break;
       case EXC_RET_CALLER:
       case NORMAL_RET_CALLER:
       case PARAM_CALLEE:
@@ -722,7 +1327,12 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
         OrdinalSet<Statement> defs = heapReachingDefs.get(st);
         if (defs != null) {
           for (Statement def : defs) {
-            delegate.addEdge(def, st);
+            if (delegate.containsNode(def) && delegate.containsNode(st)) {
+              delegate.addEdge(def, st, Dependency.DATA_DEP);
+            } else {
+              // TODO
+              System.err.println("missing nodes in graph");
+            }
           }
         }
         break;
@@ -934,17 +1544,17 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
     if (paramCalleeStatements == null) {
       ArrayList<Statement> list = new ArrayList<Statement>();
       int paramCount = node.getMethod().getNumberOfParameters();
-      
+
       for (Iterator<CGNode> callers = cg.getPredNodes(node); callers.hasNext(); ) {
         CGNode caller = callers.next();
         IR callerIR = caller.getIR();
         for (Iterator<CallSiteReference> sites = cg.getPossibleSites(caller, node); sites.hasNext(); ) {
           for (SSAAbstractInvokeInstruction inst : callerIR.getCalls(sites.next())) {
-           paramCount = Math.max(paramCount, inst.getNumberOfParameters()-1);
+            paramCount = Math.max(paramCount, inst.getNumberOfParameters()-1);
           }
         }
       }
-      
+
       for (int i = 1; i <= paramCount; i++) {
         ParamCallee s = new ParamCallee(node, i);
         delegate.addNode(s);
@@ -1122,6 +1732,9 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
   }
 
   private void computeIncomingHeapDependencies(Statement N) {
+    if (IncomingHeapDependenciesComputed.contains(N)) {
+      return;
+    }
     switch (N.getKind()) {
     case NORMAL:
       NormalStatement st = (NormalStatement) N;
@@ -1139,9 +1752,14 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
       HeapStatement h = (HeapStatement) N;
       createHeapDataDependenceEdges(h.getLocation());
     }
+    IncomingHeapDependenciesComputed.add(N);
+
   }
 
   private void computeOutgoingHeapDependencies(Statement N) {
+    if (OutgoingHeapDependenciesComputed.contains(N)) {
+      return;
+    }
     switch (N.getKind()) {
     case NORMAL:
       NormalStatement st = (NormalStatement) N;
@@ -1159,6 +1777,7 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
       HeapStatement h = (HeapStatement) N;
       createHeapDataDependenceEdges(h.getLocation());
     }
+    OutgoingHeapDependenciesComputed.add(N);
   }
 
   @Override
@@ -1276,9 +1895,9 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
     Assertions.UNREACHABLE();
     return null;
   }
-/** BEGIN Custom change: control deps */
+  /** BEGIN Custom change: control deps */
   public boolean isControlDependend(Statement from, Statement to) {
     return delegate.hasEdge(from, to, Dependency.CONTROL_DEP);
   }
-/** END Custom change: control deps */
+  /** END Custom change: control deps */
 }

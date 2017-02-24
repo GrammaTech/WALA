@@ -11,6 +11,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An instruction that represents a reflective or meta-programming operation, like loadClass in Java
@@ -103,5 +104,12 @@ public abstract class SSALoadMetadataInstruction extends SSAInstruction {
 
   public TypeReference getType() {
     return entityType;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSALoadMetadataInstruction");
+    return res;
   }
 }

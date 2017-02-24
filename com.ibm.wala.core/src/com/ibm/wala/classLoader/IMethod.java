@@ -16,6 +16,7 @@ import com.ibm.wala.types.Descriptor;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * Basic interface for an object that represents a single Java method for analysis purposes.
@@ -153,4 +154,6 @@ public interface IMethod extends IMember, ContextItem {
    * @return true iff the local variable table information for this method is available
    */
   boolean hasLocalVariableTable();
+
+  JSONObject toJSON();
 }

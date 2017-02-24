@@ -266,7 +266,11 @@ public class BasicHeapGraph<T extends InstanceKey> extends HeapGraphImpl<T> {
       return result;
     } else if (N instanceof InstanceKey) {
       InstanceKey I = (InstanceKey) N;
-      TypeReference T = I.getConcreteType().getReference();
+      IClass concreteType = I.getConcreteType();
+      if (concreteType == null) {
+        return null;
+      }
+      TypeReference T = concreteType.getReference();
 
       if (T == null) {
         assert T != null : "null concrete type from " + I.getClass();

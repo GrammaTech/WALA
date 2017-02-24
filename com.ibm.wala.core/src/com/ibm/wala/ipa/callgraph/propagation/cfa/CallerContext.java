@@ -14,6 +14,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.ipa.callgraph.ContextKey;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * This is a context which is defined by the caller node.
@@ -69,6 +70,14 @@ public class CallerContext implements Context {
 
   public CGNode getCaller() {
     return caller;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().toString());
+    res.put("TODO","not implemented");
+    return res;
   }
 
 }

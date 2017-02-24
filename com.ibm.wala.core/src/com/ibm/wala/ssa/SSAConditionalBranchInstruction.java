@@ -13,6 +13,7 @@ package com.ibm.wala.ssa;
 import com.ibm.wala.shrikeBT.IConditionalBranchInstruction;
 import com.ibm.wala.shrikeBT.IConditionalBranchInstruction.IOperator;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A conditional branch instruction, which tests two values according to some {@link IOperator}.
@@ -120,4 +121,10 @@ public class SSAConditionalBranchInstruction extends SSAInstruction {
     return true;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    return res;
+  }
 }

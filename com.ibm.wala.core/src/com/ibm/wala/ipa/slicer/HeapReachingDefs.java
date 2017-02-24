@@ -598,7 +598,10 @@ public class HeapReachingDefs<T extends InstanceKey> {
           // domain.
           Statement st = ssaInstructionIndex2Statement.get(b.getLastInstructionIndex());
           if (st == null) {
-            System.err.println(ssaInstructionIndex2Statement);
+            System.err.println("Missing " + b.getLastInstructionIndex());
+            for (Integer i : ssaInstructionIndex2Statement.keySet()) {
+              System.err.println(i + " --> " + ssaInstructionIndex2Statement.get(i));
+            }
             Assertions.UNREACHABLE("bang " + b + " " + b.getLastInstructionIndex() + " " + s);
           }
           int domainIndex = domain.getMappedIndex(st);

@@ -34,4 +34,9 @@ public class ReturnValueKey extends NodeKey {
   public int hashCode() {
     return 1283 * super.internalHashCode();
   }
+
+  @Override
+  public String toJson() {
+    return "(NODEKEY," + getNode() + ")";
+  }
 }

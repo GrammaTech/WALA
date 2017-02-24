@@ -13,6 +13,7 @@ package com.ibm.wala.ipa.callgraph.impl;
 import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.ipa.callgraph.ContextKey;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An object that represent the context everywhere; used for context-insensitive analysis
@@ -48,5 +49,12 @@ public class Everywhere implements Context {
   @Override
   public boolean equals(Object obj) {
     return this == obj;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    return res;
   }
 }

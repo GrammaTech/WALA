@@ -11,6 +11,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.shrikeBT.IComparisonInstruction;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * SSA Instruction for comparisons between floats, longs and doubles
@@ -116,5 +117,12 @@ public class SSAComparisonInstruction extends SSAInstruction {
    */
   public IComparisonInstruction.Operator getOperator() {
     return operator;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    return res;
   }
 }

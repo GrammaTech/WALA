@@ -37,6 +37,7 @@ import com.ibm.wala.util.graph.NumberedNodeManager;
 import com.ibm.wala.util.graph.impl.DelegatingNumberedNodeManager;
 import com.ibm.wala.util.graph.impl.NodeWithNumber;
 import com.ibm.wala.util.graph.traverse.DFS;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * Basic data structure support for a call graph.
@@ -211,6 +212,14 @@ public abstract class BasicCallGraph<T> extends AbstractNumberedGraph<CGNode> im
     @Override
     public String toString() {
       return "Node: " + method.toString() + " Context: " + context.toString();
+    }
+
+    @Override
+    public JSONObject toJSON() {
+      JSONObject res = new JSONObject();
+      res.put("method", method.toJSON());
+      res.put("context", context.toJSON());
+      return res;
     }
 
     @Override

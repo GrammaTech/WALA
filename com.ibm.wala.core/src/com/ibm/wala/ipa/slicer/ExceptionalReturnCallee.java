@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.slicer;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A {@link Statement} representing the exceptional return value in a callee,

@@ -12,6 +12,7 @@ package com.ibm.wala.ssa;
 
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.shrikeCT.BootstrapMethodsReader.BootstrapMethod;
+import com.ibm.wala.util.json.JSONObject;
 
 public class SSAInvokeDynamicInstruction extends SSAInvokeInstruction {
   private final BootstrapMethod bootstrap;
@@ -36,4 +37,10 @@ public class SSAInvokeDynamicInstruction extends SSAInvokeInstruction {
     return bootstrap;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAInvokeDynamicInstruction");
+    return res;
+  }
 }

@@ -49,5 +49,4 @@ public class MethodExitStatement extends Statement {
   public String toString() {
     return getKind() + ":" + getNode();
   }
-
 }

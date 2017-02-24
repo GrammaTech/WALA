@@ -31,6 +31,7 @@ import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.debug.UnimplementedError;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.strings.Atom;
 
 /**
@@ -278,5 +279,13 @@ public class FakeRootClass extends SyntheticClass {
   @Override
   public Reader getSource() {
     return null;
+  }
+
+  @Override
+  public Object toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    res.put("name", this.getName());
+    return res;
   }
 }

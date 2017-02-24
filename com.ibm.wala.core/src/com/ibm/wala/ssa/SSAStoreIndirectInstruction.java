@@ -12,6 +12,7 @@ package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A store from a pointer.
@@ -67,4 +68,10 @@ public class SSAStoreIndirectInstruction extends SSAInstruction {
     ((IVisitorWithAddresses)v).visitStoreIndirect(this);
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAStoreIndirectInstruction");
+    return res;
+  }
 }

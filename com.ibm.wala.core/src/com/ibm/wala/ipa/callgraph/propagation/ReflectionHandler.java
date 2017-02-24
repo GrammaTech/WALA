@@ -55,7 +55,6 @@ public class ReflectionHandler {
    * @throws IllegalArgumentException
    */
   protected boolean updateForReflection(IProgressMonitor monitor) throws IllegalArgumentException, CancelException {
-
     Collection<Statement> returnStatements = computeFactoryReturnStatements();
     Set<CGNode> changedNodes = HashSetFactory.make();
     for (Statement st : returnStatements) {

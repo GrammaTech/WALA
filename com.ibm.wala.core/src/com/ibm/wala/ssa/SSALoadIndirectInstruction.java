@@ -12,6 +12,7 @@ package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A load from a pointer. 
@@ -51,4 +52,10 @@ public class SSALoadIndirectInstruction extends SSAAbstractUnaryInstruction {
     ((IVisitorWithAddresses)v).visitLoadIndirect(this);
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSALoadIndirectInstruction");
+    return res;
+  }
 }

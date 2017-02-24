@@ -12,6 +12,7 @@ package com.ibm.wala.ipa.slicer;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A {@link Statement} representing an actual parameter
@@ -67,6 +68,13 @@ public class ParamCaller extends StatementWithInstructionIndex implements ValueN
     if (valueNumber != other.valueNumber)
       return false;
     return true;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject ret = super.toJSON();
+    ret.put("valueNumber", valueNumber);
+    return ret;
   }
 
 

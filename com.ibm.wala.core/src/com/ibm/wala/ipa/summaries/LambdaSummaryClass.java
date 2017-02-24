@@ -38,6 +38,7 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.types.annotations.Annotation;
 import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.collections.HashSetFactory;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.strings.Atom;
 
 public class LambdaSummaryClass extends SyntheticClass {
@@ -301,4 +302,11 @@ public class LambdaSummaryClass extends SyntheticClass {
     return true;
   }
 
+  @Override
+  public Object toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().toString());
+    res.put("name", this.getName());
+    return res;
+  }
 }

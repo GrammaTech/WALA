@@ -13,6 +13,7 @@ package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * Abstract base class for {@link SSAGetInstruction} and {@link SSAPutInstruction}.
@@ -51,5 +52,14 @@ public abstract class SSAFieldAccessInstruction extends SSAInstruction {
   @Override
   public boolean isPEI() {
     return !isStatic();
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAFieldAccessInstruction");
+    res.put("field", field.getName().toString());
+    res.put("ref", ref);
+    return res;
   }
 }

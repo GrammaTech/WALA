@@ -35,6 +35,7 @@ import com.ibm.wala.types.annotations.Annotation;
 import com.ibm.wala.types.generics.MethodTypeSignature;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.debug.Assertions;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A wrapper around a Shrike object that represents a method
@@ -520,5 +521,25 @@ public final class ShrikeCTMethod extends ShrikeBTMethod implements IBytecodeMet
   @Override
   public IndirectionData getIndirectionData() {
     return NO_INDIRECTIONS;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    /*
+    res.put("class",this.getClass().getName());
+    res.put("shrikeMethodIndex", this.shrikeMethodIndex);
+    String name;
+    try {
+      name = this.getMethodName();
+    } catch (InvalidClassFileException e) {
+      name = "";
+    }
+    res.put("methodname", name);
+    res.put("declaringclass", this.declaringClass.toJSON());
+    */
+    res.put("signature", getSignature());
+
+    return res;
   }
 }

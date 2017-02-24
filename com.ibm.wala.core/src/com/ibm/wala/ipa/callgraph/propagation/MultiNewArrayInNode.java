@@ -71,4 +71,9 @@ public final class MultiNewArrayInNode extends AllocationSiteInNode {
   public int getDim() {
     return dim;
   }
+
+  @Override
+  public String toJson() {
+    return "(MULTINEWARRAYINNODE," + super.toJson() + "," + dim + ")";
+  }
 }

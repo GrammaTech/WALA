@@ -184,4 +184,6 @@ public interface IClass extends IClassHierarchyDweller {
    */
   Collection<Annotation> getAnnotations();
 
+  Object toJSON();
+
 }

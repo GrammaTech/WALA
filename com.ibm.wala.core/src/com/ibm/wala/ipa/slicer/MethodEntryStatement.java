@@ -50,5 +50,4 @@ public class MethodEntryStatement extends Statement {
   public String toString() {
     return getKind() + ":" + getNode();
   }
-
 }

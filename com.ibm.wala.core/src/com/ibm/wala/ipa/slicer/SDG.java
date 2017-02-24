@@ -10,12 +10,16 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import com.ibm.wala.classLoader.CallSiteReference;
+import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
@@ -84,6 +88,7 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
    * keeps track of PDG for each call graph node
    */
   private final Map<CGNode, PDG> pdgMap = HashMapFactory.make();
+  private final Map<CGNode, PDG> summariesMap = HashMapFactory.make();
 
   /**
    * governs data dependence edges in the graph
@@ -121,6 +126,8 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
    * Have we eagerly populated all nodes of this SDG?
    */
   private boolean eagerComputed = false;
+
+  public boolean useSummaries = false;
 
   public SDG(final CallGraph cg, PointerAnalysis<T> pa, DataDependenceOptions dOptions, ControlDependenceOptions cOptions) {
     this(cg, pa, ModRef.make(), dOptions, cOptions, null);
@@ -174,6 +181,14 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
         addPDGStatementNodes(pdg.getCallGraphNode());
       }
     }
+  }
+
+  public OrdinalSet<PointerKey> getMod(CGNode n) {
+    return mod.get(n);
+  }
+
+  public OrdinalSet<PointerKey> getRef(CGNode n) {
+    return ref.get(n);
   }
 
   private void addPDGStatementNodes(CGNode node) {
@@ -792,15 +807,24 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
 
   @Override
   public PDG getPDG(CGNode node) {
-    PDG result = pdgMap.get(node);
-    if (result == null) {
-      result = new PDG(node, pa, mod, ref, dOptions, cOptions, heapExclude, cg, modRef);
-      pdgMap.put(node, result);
-      // Let's not eagerly add nodes, shall we?
-      // for (Iterator<? extends Statement> it = result.iterator(); it.hasNext();) {
-      // nodeMgr.addNode(it.next());
-      // }
-    }
+    PDG result;
+    /*if (useSummaries) {
+      result = summariesMap.get(node);
+      if (result == null) {
+        result = new PDG<T>(node, pa, mod, ref, dOptions, cOptions, heapExclude, cg, modRef,true, 5);
+        summariesMap.put(node, result);
+      }
+    } else {*/
+      result = pdgMap.get(node);
+      if (result == null) {
+        result = new PDG<T>(node, pa, mod, ref, dOptions, cOptions, heapExclude, cg, modRef,useSummaries, 15);
+        pdgMap.put(node, result);
+        // Let's not eagerly add nodes, shall we?
+        // for (Iterator<? extends Statement> it = result.iterator(); it.hasNext();) {
+        // nodeMgr.addNode(it.next());
+        // }
+      }
+    //}
     return result;
   }
 

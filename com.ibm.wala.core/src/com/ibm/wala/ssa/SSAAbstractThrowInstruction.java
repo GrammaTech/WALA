@@ -11,6 +11,8 @@
 
 package com.ibm.wala.ssa;
 
+import com.ibm.wala.util.json.JSONObject;
+
 /**
  * An instruction which unconditionally throws an exception
  */
@@ -75,4 +77,10 @@ public abstract class SSAAbstractThrowInstruction extends SSAInstruction {
     return exception;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAAbstractThrowInstruction");
+    return res;
+  }
 }

@@ -10,6 +10,8 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.callgraph;
 
+import com.ibm.wala.util.json.JSONObject;
+
 /**
  * A Context is a mapping from a name (ContextKey) to a value (ContextItem)
  * 
@@ -23,4 +25,6 @@ public interface Context {
    * @return the objects corresponding to a given name
    */
   ContextItem get(ContextKey name);
+
+  JSONObject toJSON();
 }

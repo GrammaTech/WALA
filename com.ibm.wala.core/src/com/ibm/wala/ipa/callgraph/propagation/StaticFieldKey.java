@@ -46,4 +46,9 @@ public final class StaticFieldKey extends AbstractPointerKey {
   public IField getField() {
     return field;
   }
+
+  @Override
+  public String toJson() {
+    return "(STATICFIELDKEY," + field + ")";
+  }
 }

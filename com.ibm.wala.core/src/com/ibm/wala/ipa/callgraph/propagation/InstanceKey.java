@@ -48,4 +48,5 @@ public interface InstanceKey extends ContextItem {
    */
   Iterator<Pair<CGNode, NewSiteReference>> getCreationSites(CallGraph CG);
 
+  public String toJson();
 }

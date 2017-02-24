@@ -47,4 +47,9 @@ public final class ArrayContentsKey extends AbstractFieldPointerKey implements F
   public TypeFilter getTypeFilter() {
     return new SingleClassFilter(((ArrayClass) instance.getConcreteType()).getElementClass());
   }
+
+  @Override
+  public String toJson() {
+    return "(ARRAYCONTENTSKEY," + instance.toJson() + ")";
+  }
 }

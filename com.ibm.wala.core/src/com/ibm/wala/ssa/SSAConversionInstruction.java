@@ -11,6 +11,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An instruction which converts a value of one primitive type into another primitive type.
@@ -105,5 +106,12 @@ public abstract class SSAConversionInstruction extends SSAInstruction {
   @Override
   public boolean isFallThrough() {
     return true;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    return res;
   }
 }

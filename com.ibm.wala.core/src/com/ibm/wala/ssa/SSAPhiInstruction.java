@@ -15,6 +15,7 @@ import java.util.Iterator;
 
 import com.ibm.wala.analysis.stackMachine.AbstractIntStackMachine;
 import com.ibm.wala.cfg.ControlFlowGraph;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A phi instruction in SSA form.
@@ -169,6 +170,13 @@ public class SSAPhiInstruction extends SSAInstruction {
   @Override
   public boolean isFallThrough() {
     return true;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().getName());
+    return res;
   }
 
  }

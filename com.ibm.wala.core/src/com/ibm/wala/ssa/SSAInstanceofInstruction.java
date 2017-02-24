@@ -11,6 +11,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A dynamic type test (instanceof) instruction.
@@ -114,5 +115,12 @@ public class SSAInstanceofInstruction extends SSAInstruction {
 
   public int getRef() {
     return ref;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAInstanceofInstruction");
+    return res;
   }
 }

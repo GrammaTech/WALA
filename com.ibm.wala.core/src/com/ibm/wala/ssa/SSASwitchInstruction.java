@@ -12,6 +12,7 @@
 package com.ibm.wala.ssa;
 
 import com.ibm.wala.util.intset.IntIterator;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * SSA instruction representing a switch statement.
@@ -139,4 +140,10 @@ public class SSASwitchInstruction extends SSAInstruction {
     return false;
   }
 
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSASwitchInstruction");
+    return res;
+  }
 }

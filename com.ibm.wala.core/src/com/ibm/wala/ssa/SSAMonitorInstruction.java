@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.wala.ssa;
 
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An instruction representing a monitorenter or monitorexit operation.
@@ -108,5 +109,12 @@ public abstract class SSAMonitorInstruction extends SSAInstruction {
    */
   public boolean isMonitorEnter() {
     return isEnter;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", "SSAMonitorInstruction");
+    return res;
   }
 }

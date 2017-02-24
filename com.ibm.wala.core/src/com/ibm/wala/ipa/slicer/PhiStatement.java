@@ -22,6 +22,7 @@ public class PhiStatement extends Statement {
   public PhiStatement(CGNode node, SSAPhiInstruction phi) {
     super(node);
     this.phi = phi;
+    this.isKeyNode = false;
   }
 
   @Override
@@ -55,5 +56,4 @@ public class PhiStatement extends Statement {
   public SSAPhiInstruction getPhi() {
     return phi;
   }
-
 }

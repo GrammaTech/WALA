@@ -18,6 +18,7 @@ import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.ipa.callgraph.ContextKey;
 import com.ibm.wala.ipa.callgraph.propagation.ConstantKey;
 import com.ibm.wala.ipa.callgraph.propagation.FilteredPointerKey;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A context which may be used if
@@ -138,5 +139,13 @@ public class GetMethodContext implements Context {
    */
   public String getName() {
     return (String)name.getValue();
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class", this.getClass().toString());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

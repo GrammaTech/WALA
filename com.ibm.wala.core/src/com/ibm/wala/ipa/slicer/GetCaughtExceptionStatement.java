@@ -12,6 +12,7 @@ package com.ibm.wala.ipa.slicer;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ssa.SSAGetCaughtExceptionInstruction;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * identifier of a GetCaughtException instruction
@@ -22,6 +23,7 @@ public class GetCaughtExceptionStatement extends Statement {
   public GetCaughtExceptionStatement(CGNode node, SSAGetCaughtExceptionInstruction st) {
     super(node);
     this.st = st;
+    this.isKeyNode = false;
   }
 
   @Override
@@ -54,6 +56,13 @@ public class GetCaughtExceptionStatement extends Statement {
 
   public SSAGetCaughtExceptionInstruction getInstruction() {
     return st;
+  }
+
+  @Override
+  public JSONObject toJSON() {
+    JSONObject ret = super.toJSON();
+    ret.put("SSAGetCaughtExceptionInstruction", st.toString());
+    return ret;
   }
 
 }
