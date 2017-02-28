@@ -67,4 +67,6 @@ public class IntStack {
       return top == -1;
   }
 
+  public int size() { return top + 1; }
+  public int get(int i) { return state[i]; }
 }
