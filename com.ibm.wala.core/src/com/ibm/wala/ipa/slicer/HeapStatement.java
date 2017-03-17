@@ -32,6 +32,7 @@ public abstract class HeapStatement extends Statement {
   public final static class HeapParamCaller extends HeapStatement {
     // index into the IR instruction array of the call statements
     private final int callIndex;
+    private Integer hashCode = null;
 
     public HeapParamCaller(CGNode node,int callIndex, PointerKey loc) {
       super(node, loc);
@@ -58,7 +59,10 @@ public abstract class HeapStatement extends Statement {
 
     @Override
     public int hashCode() {
-      return getLocation().hashCode() + 4289 * callIndex + 4133 * getNode().hashCode() + 8831;
+      if (hashCode == null) {
+          hashCode = getLocation().hashCode() + 4289 * callIndex + 4133 * getNode().hashCode() + 8831;
+      }
+      return hashCode;
     }
 
     @Override
@@ -74,6 +78,9 @@ public abstract class HeapStatement extends Statement {
   }
 
   public final static class HeapParamCallee extends HeapStatement {
+      
+    private Integer hashCode = null;
+    
     public HeapParamCallee(CGNode node, PointerKey loc) {
       super(node, loc);
     }
@@ -85,7 +92,10 @@ public abstract class HeapStatement extends Statement {
     
     @Override
     public int hashCode() {
-      return getLocation().hashCode() + 7727 * getNode().hashCode() + 7841;
+      if (hashCode == null) {
+        hashCode = getLocation().hashCode() + 7727 * getNode().hashCode() + 7841;
+      }
+      return hashCode;
     }
 
     @Override
@@ -108,6 +118,7 @@ public abstract class HeapStatement extends Statement {
   public final static class HeapReturnCaller extends HeapStatement {
     // index into the instruction array of the relevant call instruction
     private final int callIndex;
+    private Integer hashCode = null;
 //    private final SSAAbstractInvokeInstruction call;
 
     public HeapReturnCaller(CGNode node, int callIndex, PointerKey loc) {
@@ -135,7 +146,10 @@ public abstract class HeapStatement extends Statement {
 
     @Override
     public int hashCode() {
-      return getLocation().hashCode() + 8887 * callIndex + 8731 * getNode().hashCode() + 7919;
+      if (hashCode == null) {
+        hashCode = getLocation().hashCode() + 8887 * callIndex + 8731 * getNode().hashCode() + 7919;
+      }
+      return hashCode;
     }
 
     @Override
@@ -151,6 +165,9 @@ public abstract class HeapStatement extends Statement {
   }
 
   public final static class HeapReturnCallee extends HeapStatement {
+      
+    private Integer hashCode = null;
+      
     public HeapReturnCallee(CGNode node, PointerKey loc) {
       super(node, loc);
     }
@@ -162,7 +179,10 @@ public abstract class HeapStatement extends Statement {
     
     @Override
     public int hashCode() {
-      return getLocation().hashCode() + 9533 * getNode().hashCode() + 9631;
+      if (hashCode == null) {
+        hashCode = getLocation().hashCode() + 9533 * getNode().hashCode() + 9631;
+      }
+      return hashCode;
     }
 
     @Override
