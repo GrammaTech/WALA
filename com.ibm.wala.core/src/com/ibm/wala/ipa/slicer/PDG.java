@@ -352,7 +352,6 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
       createNodes(ref, cOptions, ir);
       createScalarEdges(cOptions, ir, instructionIndices);
 
-
       if (pa != null) {
         Iterator<Statement> it = delegate.iterator();
         while (it.hasNext()) {
@@ -587,7 +586,6 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
     it = graph.iterator();
     while (it.hasNext()) {
       Statement stmt = it.next();
-
       Iterator<Statement> succs = graph.getSuccNodes(stmt);
       while (succs.hasNext()) {
         Statement succ = succs.next();

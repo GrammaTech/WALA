@@ -18,6 +18,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.util.collections.NonNullSingletonIterator;
 import com.ibm.wala.util.collections.Pair;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An {@link InstanceKey} which represents a {@link NewSiteReference} in some {@link CGNode}.
@@ -54,7 +55,10 @@ public abstract class AllocationSiteInNode extends AbstractTypeInNode {
   }
 
   @Override
-  public String toJson() {
-    return "(ALLOCATIONSITEINNODE," + getNode().getMethod() + "," + site + "," + getNode().getContext() + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

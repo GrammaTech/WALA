@@ -75,9 +75,9 @@ public abstract class HeapStatement extends Statement {
 
     @Override
     public JSONObject toJSON() {
-      //TODO
-      return super.toJSON();
-      //return getKind().toString() + "," + getNode().getMethod().getSignature() + "," + getLocation().toJson() + "," + getCall();
+      JSONObject ret = super.toJSON();
+      ret.put("callIndex", callIndex);
+      return ret;
     }
   }
 
@@ -110,12 +110,6 @@ public abstract class HeapStatement extends Statement {
     @Override
     public String toString() {
       return getKind().toString() + ":" + getNode() + " " + getLocation();
-    }
-
-    @Override
-    public JSONObject toJSON() {
-      //TODO
-      return super.toJSON();
     }
   }
 
@@ -165,8 +159,9 @@ public abstract class HeapStatement extends Statement {
 
     @Override
     public JSONObject toJSON() {
-      //TODO
-      return super.toJSON();
+      JSONObject ret = super.toJSON();
+      ret.put("callIndex", callIndex);
+      return ret;
     }
   }
 
@@ -200,15 +195,16 @@ public abstract class HeapStatement extends Statement {
     public String toString() {
       return getKind().toString() + ":" + getNode() + " " + getLocation();
     }
-
-    @Override
-    public JSONObject toJSON() {
-      //TODO
-      return super.toJSON();
-    }
   }
 
   public PointerKey getLocation() {
     return loc;
+  }
+  
+  @Override
+  public JSONObject toJSON() {
+    JSONObject ret = super.toJSON();
+    ret.put("loc", loc.toJSON());
+    return ret;
   }
 }

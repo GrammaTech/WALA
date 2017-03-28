@@ -12,6 +12,7 @@ package com.ibm.wala.classLoader;
 
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  */
@@ -42,6 +43,4 @@ public interface IField extends IMember {
    * Is this member volatile?
    */
   boolean isVolatile();
-
-
 }

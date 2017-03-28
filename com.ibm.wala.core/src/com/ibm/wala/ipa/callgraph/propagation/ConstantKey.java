@@ -18,6 +18,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.util.collections.EmptyIterator;
 import com.ibm.wala.util.collections.Pair;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An instance key which represents a unique, constant object.
@@ -78,10 +79,10 @@ public final class ConstantKey<T> implements InstanceKey {
   }
 
   @Override
-  public String toJson() {
-    if (value == null)
-      return "(CONSTANTKEY,null)";
-    else
-      return "(CONSTANTKEY," + value + "," + value.getClass() + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

@@ -13,6 +13,7 @@ package com.ibm.wala.ipa.modref;
 import com.ibm.wala.ipa.callgraph.propagation.AbstractFieldPointerKey;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A {@link PointerKey} that represents an array length location
@@ -45,11 +46,12 @@ public class ArrayLengthKey extends AbstractFieldPointerKey {
   public String toString() {
     return "arraylength:" + getInstanceKey();
   }
-
+  
   @Override
-  public String toJson() {
-    // TODO Auto-generated method stub
-    return "(ARRAYLENGTHKEY," + getInstanceKey().toJson() + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
-
 }

@@ -16,6 +16,7 @@ import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.debug.UnimplementedError;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * This RTA implementation tracks a single set of Classes for each Selector
@@ -60,8 +61,10 @@ public class RTASelectorKey implements PointerKey {
   }
 
   @Override
-  public String toJson() {
-    return "(RTASELECTORKEY," + selector.toString() + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
-
 }

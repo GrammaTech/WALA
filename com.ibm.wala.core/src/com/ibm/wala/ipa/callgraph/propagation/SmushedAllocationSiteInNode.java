@@ -21,6 +21,7 @@ import com.ibm.wala.util.collections.FilterIterator;
 import com.ibm.wala.util.collections.MapIterator;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.functions.Function;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An {@link InstanceKey} which represents the set of all allocation sites
@@ -73,7 +74,10 @@ public class SmushedAllocationSiteInNode extends AbstractTypeInNode {
   }
 
   @Override
-  public String toJson() {
-    return "(SMUSHEDALLOCATIONSITEINNODE," + getNode() + "," + getConcreteType() + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

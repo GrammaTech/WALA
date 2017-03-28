@@ -23,6 +23,7 @@ import com.ibm.wala.util.collections.FilterIterator;
 import com.ibm.wala.util.collections.MapIterator;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.functions.Function;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An {@link InstanceKey} which represents a {@link NewSiteReference} in some {@link IMethod}. Note that this differs from
@@ -111,7 +112,10 @@ public class AllocationSite implements InstanceKey {
   }
 
   @Override
-  public String toJson() {
-    return "(ALLOCATIONSITE," + getMethod() + "," + site + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

@@ -10,6 +10,8 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.callgraph.propagation;
 
+import com.ibm.wala.util.json.JSONObject;
+
 /**
  * A PointerKey instance serves as the representative for an equivalence class
  * of pointers. (or more generally ...locations, if we allow primitives).
@@ -26,6 +28,6 @@ package com.ibm.wala.ipa.callgraph.propagation;
  */
 public interface PointerKey {
 
-  public String toJson();
+  public JSONObject toJSON();
 
 }

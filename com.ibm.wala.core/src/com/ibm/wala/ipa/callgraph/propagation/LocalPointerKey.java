@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.callgraph.propagation;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A pointer key which provides a unique set for each local in each call graph node.
@@ -66,8 +67,11 @@ public class LocalPointerKey extends AbstractLocalPointerKey {
   }
 
   @Override
-  public String toJson() {
-    return "(LOCALPOINTERKEY," + node + "," + valueNumber + ")";
-
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("valueNumber",valueNumber);
+    res.put("node", node.toJSON());
+    return res;
   }
 }

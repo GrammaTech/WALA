@@ -15,6 +15,7 @@ import com.ibm.wala.classLoader.ArrayClass;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.NewSiteReference;
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An {@link InstanceKey} which represents a multinewarray allocation site in a {@link CGNode}.
@@ -71,9 +72,11 @@ public final class MultiNewArrayInNode extends AllocationSiteInNode {
   public int getDim() {
     return dim;
   }
-
+  
   @Override
-  public String toJson() {
-    return "(MULTINEWARRAYINNODE," + super.toJson() + "," + dim + ")";
+  public JSONObject toJSON() {
+    JSONObject res = (JSONObject)super.toJSON();
+    res.put("dim", dim);
+    return res;
   }
 }

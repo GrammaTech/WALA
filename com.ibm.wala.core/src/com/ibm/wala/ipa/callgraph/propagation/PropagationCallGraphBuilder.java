@@ -47,6 +47,7 @@ import com.ibm.wala.util.intset.IntSet;
 import com.ibm.wala.util.intset.IntSetAction;
 import com.ibm.wala.util.intset.IntSetUtil;
 import com.ibm.wala.util.intset.MutableIntSet;
+import com.ibm.wala.util.json.JSONObject;
 import com.ibm.wala.util.warnings.Warning;
 import com.ibm.wala.util.warnings.Warnings;
 
@@ -546,10 +547,14 @@ public abstract class PropagationCallGraphBuilder implements CallGraphBuilder {
     public PointerKey getBase() {
       return base;
     }
-
+    
     @Override
-    public String toJson() {
-      return "(TYPEDPOINTERKEY," + base + "," + type + ")";
+    public JSONObject toJSON() {
+      JSONObject res = new JSONObject();
+      res.put("class",this.getClass().getName());
+      res.put("base", base.toJSON());
+      res.put("type", type.toJSON());
+      return res;
     }
   }
 

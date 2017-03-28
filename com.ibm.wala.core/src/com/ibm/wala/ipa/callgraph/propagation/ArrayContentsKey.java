@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.callgraph.propagation;
 
 import com.ibm.wala.classLoader.ArrayClass;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A {@link PointerKey} which represents the contents of an array instance.
@@ -49,7 +50,10 @@ public final class ArrayContentsKey extends AbstractFieldPointerKey implements F
   }
 
   @Override
-  public String toJson() {
-    return "(ARRAYCONTENTSKEY," + instance.toJson() + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

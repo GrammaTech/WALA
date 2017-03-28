@@ -13,6 +13,7 @@ package com.ibm.wala.ipa.callgraph.propagation;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.NewSiteReference;
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An {@link InstanceKey} which represents a "normal" (not multinewarray) {@link NewSiteReference} in a {@link CGNode}.
@@ -36,10 +37,5 @@ public final class NormalAllocationInNode extends AllocationSiteInNode {
   @Override
   public int hashCode() {
     return getNode().hashCode() * 8647 + getSite().hashCode();
-  }
-
-  @Override
-  public String toJson() {
-    return "(NORMALALLOCATIONINNODE," + super.toJson() + ")";
   }
 }

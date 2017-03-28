@@ -67,8 +67,6 @@ public abstract class StatementWithInstructionIndex extends Statement {
   public JSONObject toJSON() {
     JSONObject ret = super.toJSON();
     ret.put("instructionIndex", instructionIndex);
-    //ret.put("instruction", getInstruction().toJSON());
-    //ret.put("instruction_string", getInstruction().toString());
     return ret;
   }
 }

@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.callgraph.propagation;
 
 import com.ibm.wala.classLoader.IField;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An pointer key which represents a unique set for each static field.
@@ -46,9 +47,13 @@ public final class StaticFieldKey extends AbstractPointerKey {
   public IField getField() {
     return field;
   }
-
+  
   @Override
-  public String toJson() {
-    return "(STATICFIELDKEY," + field + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("field", field.toString());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

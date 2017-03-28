@@ -12,6 +12,7 @@
 package com.ibm.wala.ipa.callgraph.propagation;
 
 import com.ibm.wala.classLoader.IField;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An pointer key which represents a unique set for a field associated with a set of instances.
@@ -66,8 +67,10 @@ public class InstanceFieldKey extends AbstractFieldPointerKey {
   }
 
   @Override
-  public String toJson() {
-    return "(INSTANCEFIELDKEY, " + field + "," + instance.toJson() + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
-
 }

@@ -19,6 +19,7 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.collections.EmptyIterator;
 import com.ibm.wala.util.collections.Pair;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An {@link InstanceKey} which represents the constant char[] contents
@@ -80,7 +81,10 @@ public class StringConstantCharArray implements InstanceKey {
   }
 
   @Override
-  public String toJson() {
-    return "(STRINGCONSTANTCHARARRAY," + constant + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

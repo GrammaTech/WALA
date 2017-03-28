@@ -28,6 +28,7 @@ import com.ibm.wala.util.collections.MapIterator;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.functions.Function;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An instance key which represents a unique set for each concrete type.
@@ -126,9 +127,12 @@ public final class ConcreteTypeKey implements InstanceKey {
       }
     };
   }
-
+  
   @Override
-  public String toJson() {
-    return "(CONCRETETYPEKEY, " + type + ")";
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("TODO","not implemented");
+    return res;
   }
 }

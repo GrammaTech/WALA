@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.callgraph.propagation;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A key which represents a set corresponding to a call graph node.
@@ -34,6 +35,15 @@ public abstract class NodeKey extends AbstractLocalPointerKey {
   protected int internalHashCode() {
     return node.hashCode() * 1621;
   }
+  
+  @Override
+  public JSONObject toJSON() {
+    JSONObject res = new JSONObject();
+    res.put("class",this.getClass().getName());
+    res.put("node",node.toJSON());
+    return res;
+  }
+  
   /**
    * @return the node this key represents
    */

@@ -18,6 +18,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.ContextItem;
 import com.ibm.wala.util.collections.Pair;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * An InstanceKey serves as the representative for an equivalence class of
@@ -48,5 +49,5 @@ public interface InstanceKey extends ContextItem {
    */
   Iterator<Pair<CGNode, NewSiteReference>> getCreationSites(CallGraph CG);
 
-  public String toJson();
+  public JSONObject toJSON();
 }

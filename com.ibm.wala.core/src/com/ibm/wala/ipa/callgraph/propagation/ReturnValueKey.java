@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.callgraph.propagation;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.json.JSONObject;
 
 /**
  * A key which represents the return value for a node.
@@ -33,10 +34,5 @@ public class ReturnValueKey extends NodeKey {
   @Override
   public int hashCode() {
     return 1283 * super.internalHashCode();
-  }
-
-  @Override
-  public String toJson() {
-    return "(NODEKEY," + getNode() + ")";
   }
 }

@@ -74,7 +74,7 @@ public class NormalStatement extends StatementWithInstructionIndex {
   @Override
   public JSONObject toJSON() {
     JSONObject ret = super.toJSON();
+    ret.put("IsAbstractInvokeInstruction", getInstruction() instanceof SSAAbstractInvokeInstruction ? 1 : 0);
     return ret;
   }
-
 }
