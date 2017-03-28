@@ -90,7 +90,7 @@ public class EntryPoints {
     private LinkedList<Entrypoint> entries;
 
     public void listenerEntryPoints(ClassHierarchy cha, AndroidAnalysisContext loader) {
-        ArrayList<MethodReference> entryPointMRs = new ArrayList<MethodReference>();
+        ArrayList<MethodReference> entryPointMRs = new ArrayList<>();
 
         // onLocation
         entryPointMRs.add(StringStuff.makeMethodReference("android.location.LocationListener.onLocationChanged(Landroid/location/Location;)V"));
@@ -109,7 +109,7 @@ public class EntryPoints {
     }
 
     public static List<Entrypoint> defaultEntryPoints(ClassHierarchy cha) {
-    	List<Entrypoint> entries = new ArrayList<Entrypoint>();
+    	List<Entrypoint> entries = new ArrayList<>();
     	for (MethodNamePattern mnp:new AndroidSpecs().getEntrypointSpecs()) {
     		for (IMethod im: mnp.getPossibleTargets(cha)) {
     			
@@ -288,7 +288,7 @@ public class EntryPoints {
 	private static String getTagValue(String sTag, Element eElement) {
         NodeList nlList = eElement.getElementsByTagName(sTag).item(0).getChildNodes();
 
-        Node nValue = (Node) nlList.item(0);
+        Node nValue = nlList.item(0);
 
         return nValue.getNodeValue();
     }

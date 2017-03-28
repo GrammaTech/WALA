@@ -27,7 +27,7 @@ public class ParanoidHashSet<T> extends LinkedHashSet<T> {
   public static final long serialVersionUID = 30919839181133333L;
 
   /**
-   * A mapping from Integer (hashcode) -> Set of objects
+   * A mapping from Integer (hashcode) -&gt; Set of objects
    */
   private final Map<Integer, Set<T>> hcFreq;
 
@@ -80,7 +80,7 @@ public class ParanoidHashSet<T> extends LinkedHashSet<T> {
       int hc = arg0.hashCode();
       Set<T> s = hcFreq.get(new Integer(hc));
       if (s == null) {
-        HashSet<T> h = new LinkedHashSet<T>(1);
+        HashSet<T> h = new LinkedHashSet<>(1);
         h.add(arg0);
         hcFreq.put(new Integer(hc), h);
       } else {

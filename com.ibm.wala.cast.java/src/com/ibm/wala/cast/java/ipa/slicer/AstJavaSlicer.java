@@ -39,7 +39,6 @@ import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.graph.traverse.DFS;
 
-@SuppressWarnings("deprecation")
 public class AstJavaSlicer extends Slicer {
 
   /*
@@ -59,7 +58,7 @@ public class AstJavaSlicer extends Slicer {
   }
 
   public static Set<Statement> gatherStatements(CallGraph CG, Collection<CGNode> partialRoots, Predicate<SSAInstruction> filter) {
-    Set<Statement> result = new HashSet<Statement>();
+    Set<Statement> result = new HashSet<>();
     for (Iterator<CGNode> ns = DFS.getReachableNodes(CG, partialRoots).iterator(); ns.hasNext();) {
       CGNode n = ns.next();
       IR nir = n.getIR();
@@ -108,10 +107,10 @@ public class AstJavaSlicer extends Slicer {
     });
   }
 
-  public static Pair<Collection<Statement>, SDG> computeAssertionSlice(CallGraph CG, PointerAnalysis<InstanceKey> pa,
+  public static Pair<Collection<Statement>, SDG<InstanceKey>> computeAssertionSlice(CallGraph CG, PointerAnalysis<InstanceKey> pa,
       Collection<CGNode> partialRoots, boolean multiThreadedCode) throws IllegalArgumentException, CancelException {
-    CallGraph pcg = PartialCallGraph.make(CG, new LinkedHashSet<CGNode>(partialRoots));
-    SDG sdg = new SDG(pcg, pa, new AstJavaModRef(), DataDependenceOptions.FULL, ControlDependenceOptions.FULL);
+    CallGraph pcg = PartialCallGraph.make(CG, new LinkedHashSet<>(partialRoots));
+    SDG<InstanceKey> sdg = new SDG<>(pcg, pa, new AstJavaModRef<>(), DataDependenceOptions.FULL, ControlDependenceOptions.FULL);
     //System.err.println(("SDG:\n" + sdg));
     Set<Statement> stmts = gatherAssertions(CG, partialRoots);
     if (multiThreadedCode) {

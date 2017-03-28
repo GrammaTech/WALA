@@ -311,7 +311,7 @@ public class JdtUtil {
       // and failed. implementing a miserable hack instead.
       // Need to consult a guru to figure out how to do this.
       try {
-        List<IMethod> matches = new ArrayList<IMethod>();
+        List<IMethod> matches = new ArrayList<>();
         Collection<String> typeParameterNames = getTypeParameterNames(type);
         METHODS: for (IMethod x : type.getMethods()) {
           if (x.getElementName().equals(name)) {
@@ -389,7 +389,7 @@ public class JdtUtil {
         throw new IllegalArgumentException("invalid descriptor: " + d);
       }
 
-      ArrayList<String> sigs = new ArrayList<String>(10);
+      ArrayList<String> sigs = new ArrayList<>(10);
 
       int i = 1;
       while (true) {
@@ -578,6 +578,7 @@ public class JdtUtil {
   }
 
   public static ASTNode getAST(IFile javaSourceFile) {
+	  @SuppressWarnings("deprecation")
 	  ASTParser parser = ASTParser.newParser(AST.JLS3);
 	  parser.setSource(JavaCore.createCompilationUnitFrom(javaSourceFile));
 	  parser.setProject(JavaCore.create(javaSourceFile.getProject()));

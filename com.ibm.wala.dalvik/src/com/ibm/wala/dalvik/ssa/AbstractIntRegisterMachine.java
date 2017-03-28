@@ -12,7 +12,6 @@
 package com.ibm.wala.dalvik.ssa;
 
 import java.util.Iterator;
-import java.util.logging.Logger;
 
 import com.ibm.wala.dalvik.classLoader.DexCFG;
 import com.ibm.wala.dalvik.classLoader.DexCFG.BasicBlock;
@@ -200,7 +199,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
         };
 
-        IKilldallFramework<BasicBlock, MachineState> problem = new BasicFramework<BasicBlock, MachineState>(cfg, xferFunctions);
+        IKilldallFramework<BasicBlock, MachineState> problem = new BasicFramework<>(cfg, xferFunctions);
         solver = new DataflowSolver<BasicBlock, MachineState>(problem) {
             private MachineState entry;
 
@@ -903,7 +902,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
         protected class BasicRegisterMachineVisitor extends Visitor {
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitArrayLength(ArrayLengthInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitArrayLength(ArrayLengthInstruction)
              */
             @Override
             public void visitArrayLength(ArrayLength instruction) {
@@ -915,7 +914,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitArrayLoad(IArrayLoadInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitArrayLoad(IArrayLoadInstruction)
              */
             @Override
             public void visitArrayGet(ArrayGet instruction) {
@@ -928,7 +927,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitArrayStore(IArrayStoreInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitArrayStore(IArrayStoreInstruction)
              */
             @Override
             public void visitArrayPut(ArrayPut instruction) {
@@ -940,7 +939,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitBinaryOp(IBinaryOpInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitBinaryOp(IBinaryOpInstruction)
              */
             @Override
             public void visitBinaryOperation(BinaryOperation instruction) {
@@ -950,7 +949,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitComparison(IComparisonInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitComparison(IComparisonInstruction)
              */
 //          @Override
 //          public void visitComparison(IComparisonInstruction instruction) {
@@ -960,7 +959,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitConditionalBranch(IConditionalBranchInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitConditionalBranch(IConditionalBranchInstruction)
              */
             @Override
             public void visitBranch(Branch instruction) {
@@ -971,7 +970,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitConstant(ConstantInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitConstant(ConstantInstruction)
              */
             @Override
             public void visitConstant(Constant instruction) {
@@ -981,7 +980,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitConversion(IConversionInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitConversion(IConversionInstruction)
              */
 //          @Override
 //          public void visitConversion(IConversionInstruction instruction) {
@@ -990,7 +989,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitDup(DupInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitDup(DupInstruction)
              */
 //          @Override
 //          public void visitDup(DupInstruction instruction) {
@@ -1023,7 +1022,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitGet(IGetInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitGet(IGetInstruction)
              */
             @Override
             public void visitGetField(GetField instruction) {
@@ -1040,7 +1039,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitInstanceof(InstanceofInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitInstanceof
              */
             @Override
             public void visitInstanceof(InstanceOf instruction) {
@@ -1051,7 +1050,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitInvoke(IInvokeInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitInvoke(IInvokeInstruction)
              */
             @Override
             public void visitInvoke(Invoke instruction) {
@@ -1066,7 +1065,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitMonitor(MonitorInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitMonitor(MonitorInstruction)
              */
             @Override
             public void visitMonitor(Monitor instruction) {
@@ -1076,7 +1075,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitLocalLoad(ILoadInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitLocalLoad(ILoadInstruction)
              */
 //          @Override
 //          public void visitLocalLoad(ILoadInstruction instruction) {
@@ -1085,7 +1084,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitLocalStore(IStoreInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitLocalStore(IStoreInstruction)
              */
 //          @Override
 //          public void visitLocalStore(IStoreInstruction instruction) {
@@ -1094,7 +1093,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitNew(NewInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitNew(NewInstruction)
              */
             @Override
             public void visitNew(New instruction) {
@@ -1105,7 +1104,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitPop(PopInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitPop(PopInstruction)
              */
 //          @Override
 //          public void visitPop(PopInstruction instruction) {
@@ -1115,7 +1114,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitPut(IPutInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitPut(IPutInstruction)
              */
             @Override
             public void visitPutField(PutField instruction) {
@@ -1125,7 +1124,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitShift(IShiftInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitShift(IShiftInstruction)
              */
 //          @Override
 //          public void visitShift(IShiftInstruction instruction) {
@@ -1133,7 +1132,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitSwap(SwapInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitSwap(SwapInstruction)
              */
 //          @Override
 //          public void visitSwap(SwapInstruction instruction) {
@@ -1141,7 +1140,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
 //          }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitSwitch(SwitchInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitSwitch(SwitchInstruction)
              */
             @Override
             public void visitSwitch(Switch instruction) {
@@ -1151,7 +1150,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitThrow(ThrowInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitThrow(ThrowInstruction)
              */
             @Override
             public void visitThrow(Throw instruction) {
@@ -1163,7 +1162,7 @@ public abstract class AbstractIntRegisterMachine implements FixedPointConstants 
             }
 
             /**
-             * @see com.ibm.wala.shrikeBT.Instruction.Visitor#visitUnaryOp(IUnaryOpInstruction)
+             * @see com.ibm.wala.shrikeBT.IInstruction.Visitor#visitUnaryOp(IUnaryOpInstruction)
              */
             @Override
             public void visitUnaryOperation(UnaryOperation instruction) {

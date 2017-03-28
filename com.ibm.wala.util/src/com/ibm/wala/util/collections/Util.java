@@ -71,9 +71,9 @@ public class Util {
     }
     // create a memory buffer to which to dump the trace
     ByteArrayOutputStream traceDump = new ByteArrayOutputStream();
-    PrintWriter w = new PrintWriter(traceDump);
-    thrown.printStackTrace(w);
-    w.close();
+    try (final PrintWriter w = new PrintWriter(traceDump)) {
+      thrown.printStackTrace(w);
+    }
     return traceDump.toString();
   }
   
@@ -164,7 +164,7 @@ public class Util {
     if (srcList == null) {
       throw new IllegalArgumentException("srcList == null");
     }
-    ArrayList<U> result = new ArrayList<U>();
+    ArrayList<U> result = new ArrayList<>();
     for (Iterator<T> srcIter = srcList.iterator(); srcIter.hasNext();) {
       result.add(f.apply(srcIter.next()));
     }

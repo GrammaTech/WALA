@@ -102,7 +102,7 @@ public class LocalSummaryEdges {
    * @param s_p local block number an entry
    * @param x local block number of an exit block
    * @param d1 source dataflow fact
-   * @return set of d2 s.t. d1->d2 recorded as a summary edge for (s_p,x), or null if none
+   * @return set of d2 s.t. d1 -&gt; d2 recorded as a summary edge for (s_p,x), or null if none
    */
   public IntSet getSummaryEdges(int s_p, int x, int d1) {
     long index = LongUtil.pack(s_p, x);
@@ -120,7 +120,7 @@ public class LocalSummaryEdges {
    * @param s_p local block number an entry
    * @param x local block number of an exit block
    * @param d2 target dataflow fact
-   * @return set of d1 s.t. d1->d2 recorded as a summary edge for (s_p,x), or null if none
+   * @return set of d1 s.t. d1 -&gt; d2 recorded as a summary edge for (s_p,x), or null if none
    */
   public IntSet getInvertedSummaryEdgesForTarget(int s_p, int x, int d2) {
     long index = LongUtil.pack(s_p, x);

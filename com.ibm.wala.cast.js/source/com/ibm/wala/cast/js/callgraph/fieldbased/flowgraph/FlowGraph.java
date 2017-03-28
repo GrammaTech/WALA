@@ -39,9 +39,9 @@ import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.classLoader.NewSiteReference;
 import com.ibm.wala.classLoader.ProgramCounter;
-import com.ibm.wala.ipa.callgraph.AnalysisCache;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.IAnalysisCacheView;
 import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.callgraph.propagation.FilteredPointerKey;
 import com.ibm.wala.ipa.callgraph.propagation.FilteredPointerKey.TypeFilter;
@@ -92,7 +92,7 @@ public class FlowGraph implements Iterable<Vertex> {
 	private GraphReachability<Vertex,FuncVertex> optimistic_closure;
 	
 	public FlowGraph() {
-		this.graph = new SlowSparseNumberedGraph<Vertex>(1);
+		this.graph = new SlowSparseNumberedGraph<>(1);
 		this.factory = new VertexFactory();
 	}
 	
@@ -125,8 +125,8 @@ public class FlowGraph implements Iterable<Vertex> {
 		
 		// compute transitive closure
 		GraphReachability<Vertex, T> optimistic_closure = 
-		    new GraphReachability<Vertex,T>(
-		      new InvertedGraph<Vertex>(pruned_flowgraph),
+		    new GraphReachability<>(
+		      new InvertedGraph<>(pruned_flowgraph),
 		      new Predicate<Vertex>() {
 		        @Override public boolean test(Vertex o) {
 		          return type.isInstance(o);
@@ -180,16 +180,16 @@ public class FlowGraph implements Iterable<Vertex> {
     return graph.iterator();
   }
   
-  public PointerAnalysis<ObjectVertex> getPointerAnalysis(final CallGraph cg, final AnalysisCache cache, final IProgressMonitor monitor) throws CancelException {
+  public PointerAnalysis<ObjectVertex> getPointerAnalysis(final CallGraph cg, final IAnalysisCacheView cache, final IProgressMonitor monitor) throws CancelException {
     return new PointerAnalysis<ObjectVertex>() {
       
       private final Map<Pair<PrototypeField,ObjectVertex>,PrototypeFieldVertex> proto = HashMapFactory.make();
       
       private GraphReachability<Vertex,ObjectVertex> pointerAnalysis = computeClosure(graph, monitor, ObjectVertex.class);
 
-      private final ExtensionGraph<Vertex> dataflow = new ExtensionGraph<Vertex>(graph);
+      private final ExtensionGraph<Vertex> dataflow = new ExtensionGraph<>(graph);
 
-      protected IR getIR(final AnalysisCache cache, FuncVertex func) {
+      protected IR getIR(final IAnalysisCacheView cache, FuncVertex func) {
         return cache.getIR(func.getConcreteType().getMethod(AstMethodReference.fnSelector));
       }
 
@@ -288,8 +288,8 @@ public class FlowGraph implements Iterable<Vertex> {
         return new Iterable<PointerKey> () {
           @Override
           public Iterator<PointerKey> iterator() {
-            return new CompoundIterator<PointerKey>(factory.getArgVertices().iterator(),
-                new CompoundIterator<PointerKey>(factory.getRetVertices().iterator(), 
+            return new CompoundIterator<>(factory.getArgVertices().iterator(),
+                new CompoundIterator<>(factory.getRetVertices().iterator(), 
                     new CompoundIterator<PointerKey>(factory.getVarVertices().iterator(),
                         factory.getPropVertices().iterator())));
           }

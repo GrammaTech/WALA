@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.dalvik.ipa.callgraph.androidModel.AndroidModelClass;
@@ -106,7 +105,7 @@ public class SpecializedInstantiator extends FlatInstantiator {
     /* package private */ SSAValue createInstance(final TypeReference T, final boolean asManaged, VariableKey key, Set<? extends SSAValue> seen, int currentDepth) {
         if (seen == null) {
             
-            seen = new HashSet<SSAValue>();
+            seen = new HashSet<>();
         }
        
         if (currentDepth > this.maxDepth) {
@@ -144,7 +143,7 @@ public class SpecializedInstantiator extends FlatInstantiator {
 
 
 
-    private static final Set<TypeReference> understandTypes = new HashSet<TypeReference>();
+    private static final Set<TypeReference> understandTypes = new HashSet<>();
     static {
         understandTypes.add(AndroidTypes.Context);
         understandTypes.add(AndroidTypes.ContextWrapper);
@@ -160,7 +159,7 @@ public class SpecializedInstantiator extends FlatInstantiator {
      *  Creates a new instance of android/content/Context.
      */
     public SSAValue createContext(final TypeReference T, final boolean asManaged, VariableKey key, Set<? extends SSAValue> seen) {
-        final List<SSAValue> appComponents = new ArrayList<SSAValue>();
+        final List<SSAValue> appComponents = new ArrayList<>();
         {
             // TODO: Can we create a tighter conterxt?
             // TODO: Force an Application-Context?
@@ -249,7 +248,7 @@ public class SpecializedInstantiator extends FlatInstantiator {
             // call: ContextWrapper(Context base)
             final MethodReference ctor = MethodReference.findOrCreate(T, MethodReference.initAtom, 
                     Descriptor.findOrCreate(new TypeName[] { AndroidTypes.ContextName }, TypeReference.VoidName));
-            final List<SSAValue> params = new ArrayList<SSAValue>();
+            final List<SSAValue> params = new ArrayList<>();
             params.add(context);
             addCallCtor(instance, ctor, params);
         }
@@ -261,6 +260,7 @@ public class SpecializedInstantiator extends FlatInstantiator {
     /**
      *  Satisfy the interface.
      */
+    @SuppressWarnings("unchecked")
     public int createInstance(TypeReference type, Object... instantiatorArgs) {
         // public SSAValue createInstance(final TypeReference T, final boolean asManaged, VariableKey key, Set<SSAValue> seen) {
         if (! (instantiatorArgs[0] instanceof Boolean)) {
@@ -282,7 +282,7 @@ public class SpecializedInstantiator extends FlatInstantiator {
             }
         }
         if (instantiatorArgs[2] != null) {
-            final Set seen = (Set) instantiatorArgs[2];
+            final Set<?> seen = (Set<?>) instantiatorArgs[2];
             if (! seen.isEmpty()) {
                 final Object o = seen.iterator().next();
                 if (! (o instanceof SSAValue)) {

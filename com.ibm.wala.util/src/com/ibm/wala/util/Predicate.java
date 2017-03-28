@@ -57,12 +57,10 @@ public abstract class Predicate<T> {
   @SuppressWarnings("rawtypes")
   public static final Predicate TRUE = FALSE.not();
 
-  @SuppressWarnings("unchecked")
   public static <T> Predicate<T> truePred() {
     return TRUE;
   }
 
-  @SuppressWarnings("unchecked")
   public static <T> Predicate<T> falsePred() {
     return FALSE;
   }
@@ -128,7 +126,7 @@ public abstract class Predicate<T> {
     if (src == null) {
       throw new IllegalArgumentException("src == null");
     }
-    ArrayList<T> result = new ArrayList<T>();
+    ArrayList<T> result = new ArrayList<>();
     for (; src.hasNext();) {
       T curElem = src.next();
       if (pred.test(curElem))

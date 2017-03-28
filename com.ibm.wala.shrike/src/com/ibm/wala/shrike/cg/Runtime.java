@@ -59,7 +59,7 @@ public class Runtime {
 
     @Override
     protected Stack<String> initialValue() {
-      Stack<String> callStack = new Stack<String>();
+      Stack<String> callStack = new Stack<>();
       callStack.push("root");
       return callStack;
     }
@@ -67,8 +67,8 @@ public class Runtime {
   };
   
   private Runtime(String fileName, String filterFileName, String policyClassName) {
-    try {
-      filter = new FileOfClasses(new FileInputStream(filterFileName));
+    try (final FileInputStream in = new FileInputStream(filterFileName)) {
+      filter = new FileOfClasses(in);
     } catch (Exception e) {
       filter = null;
     }

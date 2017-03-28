@@ -126,7 +126,7 @@ public abstract class IRTests {
   protected static class EdgeAssertions implements IRAssertion {
     public final String srcDescriptor;
 
-    public final List/* <String> */<String> tgtDescriptors = new ArrayList<String>();
+    public final List/* <String> */<String> tgtDescriptors = new ArrayList<>();
 
     public EdgeAssertions(String srcDescriptor) {
       this.srcDescriptor = srcDescriptor;
@@ -346,7 +346,7 @@ public abstract class IRTests {
     return new String[] { "L" + pkgName + "/" + getTestName().substring(4) };
   }
 
-  protected abstract AbstractAnalysisEngine getAnalysisEngine(String[] mainClassDescriptors, Collection<String> sources, List<String> libs);
+  protected abstract <I extends InstanceKey> AbstractAnalysisEngine<I> getAnalysisEngine(String[] mainClassDescriptors, Collection<String> sources, List<String> libs);
 
   public <I extends InstanceKey> Pair<CallGraph, PointerAnalysis<I>> runTest(Collection<String> sources, List<String> libs,
         String[] mainClassDescriptors, List<? extends IRAssertion> ca, boolean assertReachable) throws IllegalArgumentException, CancelException, IOException {

@@ -17,10 +17,10 @@ import com.ibm.wala.cast.js.loader.JSCallSiteReference;
 import com.ibm.wala.cast.js.ssa.JSInstructionFactory;
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
-import com.ibm.wala.ipa.callgraph.AnalysisCache;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.ContextItem;
+import com.ibm.wala.ipa.callgraph.IAnalysisCacheView;
 import com.ibm.wala.ssa.ConstantValue;
 import com.ibm.wala.ssa.DefUse;
 import com.ibm.wala.ssa.IR;
@@ -38,7 +38,7 @@ public class JavaScriptFunctionApplyContextInterpreter extends AstContextInsensi
 
   private static final TypeName APPLY_TYPE_NAME = TypeName.findOrCreate("Lprologue.js/Function_prototype_apply");
 
-  public JavaScriptFunctionApplyContextInterpreter(AnalysisOptions options, AnalysisCache cache) {
+  public JavaScriptFunctionApplyContextInterpreter(AnalysisOptions options, IAnalysisCacheView cache) {
     super(options, cache);
   }
 

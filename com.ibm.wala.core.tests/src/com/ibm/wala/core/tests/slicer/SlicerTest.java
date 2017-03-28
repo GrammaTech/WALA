@@ -26,7 +26,7 @@ import org.junit.Test;
 import com.ibm.wala.core.tests.callGraph.CallGraphTestUtil;
 import com.ibm.wala.core.tests.util.TestConstants;
 import com.ibm.wala.examples.drivers.PDFSlice;
-import com.ibm.wala.ipa.callgraph.AnalysisCache;
+import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
 import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.CGNode;
@@ -36,12 +36,14 @@ import com.ibm.wala.ipa.callgraph.ContextSelector;
 import com.ibm.wala.ipa.callgraph.Entrypoint;
 import com.ibm.wala.ipa.callgraph.impl.PartialCallGraph;
 import com.ibm.wala.ipa.callgraph.impl.Util;
+import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
+import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.callgraph.propagation.SSAContextInterpreter;
 import com.ibm.wala.ipa.callgraph.propagation.SSAPropagationCallGraphBuilder;
 import com.ibm.wala.ipa.callgraph.propagation.cfa.ZeroXInstanceKeys;
 import com.ibm.wala.ipa.callgraph.propagation.cfa.nCFABuilder;
-import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
+import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.slicer.MethodEntryStatement;
 import com.ibm.wala.ipa.slicer.NormalStatement;
@@ -85,7 +87,7 @@ public class SlicerTest {
 
   private static IClassHierarchy findOrCreateCHA(AnalysisScope scope) throws ClassHierarchyException {
     if (cachedCHA == null) {
-      cachedCHA = ClassHierarchy.make(scope);
+      cachedCHA = ClassHierarchyFactory.make(scope);
     }
     return cachedCHA;
   }
@@ -104,7 +106,7 @@ public class SlicerTest {
         TestConstants.SLICE1_MAIN);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -112,8 +114,9 @@ public class SlicerTest {
     Statement s = findCallTo(main, "println");
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> computeBackwardSlice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(),
-        DataDependenceOptions.FULL, ControlDependenceOptions.NONE);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> computeBackwardSlice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis,
+        InstanceKey.class, DataDependenceOptions.FULL, ControlDependenceOptions.NONE);
     Collection<Statement> slice = computeBackwardSlice;
     dumpSlice(slice);
 
@@ -134,7 +137,7 @@ public class SlicerTest {
         TestConstants.SLICE2_MAIN);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMethod(cg, "baz");
@@ -142,8 +145,9 @@ public class SlicerTest {
     Statement s = findCallTo(main, "println");
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> computeBackwardSlice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(),
-        DataDependenceOptions.FULL, ControlDependenceOptions.NONE);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> computeBackwardSlice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis,
+        InstanceKey.class, DataDependenceOptions.FULL, ControlDependenceOptions.NONE);
     Collection<Statement> slice = computeBackwardSlice;
     dumpSlice(slice);
 
@@ -158,7 +162,7 @@ public class SlicerTest {
         TestConstants.SLICE3_MAIN);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMethod(cg, "main");
@@ -166,7 +170,8 @@ public class SlicerTest {
     Statement s = findCallTo(main, "doNothing");
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 1, countAllocations(slice));
@@ -181,7 +186,7 @@ public class SlicerTest {
         TestConstants.SLICE4_MAIN);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -189,7 +194,8 @@ public class SlicerTest {
     s = PDFSlice.getReturnStatementForCall(s);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 4, slice.size());
@@ -204,7 +210,7 @@ public class SlicerTest {
         TestConstants.SLICE5_MAIN);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode n = findMethod(cg, "baz");
@@ -212,8 +218,9 @@ public class SlicerTest {
     s = PDFSlice.getReturnStatementForCall(s);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
-        ControlDependenceOptions.NONE);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, pointerAnalysis, InstanceKey.class,
+        DataDependenceOptions.FULL, ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 7, slice.size());
   }
@@ -234,15 +241,16 @@ public class SlicerTest {
         TestConstants.SLICE7_MAIN);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneContainerCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneContainerCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
     Statement s = findFirstAllocation(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
-        ControlDependenceOptions.NONE);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, pointerAnalysis, InstanceKey.class,
+        DataDependenceOptions.FULL, ControlDependenceOptions.NONE);
     dumpSlice(slice);
   }
 
@@ -262,19 +270,20 @@ public class SlicerTest {
         TestConstants.SLICE8_MAIN);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode process = findMethod(cg, Descriptor.findOrCreateUTF8("()V"), Atom.findOrCreateUnicodeAtom("process"));
     Statement s = findCallToDoNothing(process);
     System.err.println("Statement: " + s);
     // compute a backward slice, with data dependence and no exceptional control dependence
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
     dumpSlice(slice);
     Assert.assertEquals(4, countInvokes(slice));
     // should only get 4 statements total when ignoring control dependences completely
-    slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     Assert.assertEquals(slice.toString(), 4, slice.size());
   }
@@ -288,7 +297,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTCD1);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -296,7 +305,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.NONE,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.NONE,
         ControlDependenceOptions.FULL);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 2, countConditionals(slice));
@@ -311,7 +321,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTCD2);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -319,7 +329,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.NONE,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.NONE,
         ControlDependenceOptions.FULL);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 1, countConditionals(slice));
@@ -334,7 +345,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTCD3);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -342,7 +353,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.NONE,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.NONE,
         ControlDependenceOptions.FULL);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 0, countConditionals(slice));
@@ -357,7 +369,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTCD4);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -366,14 +378,15 @@ public class SlicerTest {
     System.err.println("Statement: " + s);
 
     // compute a no-data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.NONE,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.NONE,
         ControlDependenceOptions.FULL);
     dumpSlice(slice);
     Assert.assertEquals(0, countConditionals(slice));
 
     // compute a full slice
-    slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
-        ControlDependenceOptions.FULL);
+    slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class,
+        DataDependenceOptions.FULL, ControlDependenceOptions.FULL);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 1, countConditionals(slice));
   }
@@ -387,7 +400,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTCD5);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -396,8 +409,9 @@ public class SlicerTest {
     System.err.println("Statement: " + s);
 
     // compute a no-data slice
-    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.NONE,
-        ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, pointerAnalysis, InstanceKey.class,
+        DataDependenceOptions.NONE, ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
     dumpSlice(slice);
     Assert.assertTrue(slice.toString(), slice.size() > 1);
   }
@@ -411,7 +425,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTCD6);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -420,8 +434,9 @@ public class SlicerTest {
     System.err.println("Statement: " + s);
 
     // compute a no-data slice
-    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.NONE,
-        ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeForwardSlice(s, cg, pointerAnalysis, InstanceKey.class,
+        DataDependenceOptions.NONE, ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 2, countInvokes(slice));
   }
@@ -435,7 +450,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTID);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -443,7 +458,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 1, countAllocations(slice));
@@ -458,7 +474,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTARRAYS);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -466,7 +482,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 2, countAllocations(slice));
@@ -482,7 +499,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTFIELDS);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -490,7 +507,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 2, countAllocations(slice));
@@ -506,7 +524,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTTHIN1);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -516,15 +534,16 @@ public class SlicerTest {
 
     // compute normal data slice
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(3, countAllocations(slice));
     Assert.assertEquals(2, countPutfields(slice));
 
     // compute thin slice .. ignore base pointers
-    Collection<Statement> computeBackwardSlice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(),
-        DataDependenceOptions.NO_BASE_PTRS, ControlDependenceOptions.NONE);
+    Collection<Statement> computeBackwardSlice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis,
+        InstanceKey.class, DataDependenceOptions.NO_BASE_PTRS, ControlDependenceOptions.NONE);
     slice = computeBackwardSlice;
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 2, countAllocations(slice));
@@ -540,7 +559,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTGLOBAL);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -548,7 +567,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 1, countAllocations(slice));
@@ -565,7 +585,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTMULTITARGET);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -573,7 +593,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 2, countAllocations(slice));
@@ -588,7 +609,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTRECURSION);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -597,7 +618,8 @@ public class SlicerTest {
     System.err.println("Statement: " + s);
 
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 3, countAllocations(slice));
@@ -613,7 +635,7 @@ public class SlicerTest {
         TestConstants.SLICE_TEST_PRIM_GETTER_SETTER);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode test = findMethod(cg, "test");
@@ -624,8 +646,9 @@ public class SlicerTest {
     System.err.println("Statement: " + s);
 
     // compute full slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, pcg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
-        ControlDependenceOptions.FULL);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, pcg, pointerAnalysis, InstanceKey.class,
+        DataDependenceOptions.FULL, ControlDependenceOptions.FULL);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 0, countAllocations(slice));
     Assert.assertEquals(slice.toString(), 1, countPutfields(slice));
@@ -648,7 +671,7 @@ public class SlicerTest {
     Util.addDefaultBypassLogic(options, scope, Util.class.getClassLoader(), cha);
     ContextSelector appSelector = null;
     SSAContextInterpreter appInterpreter = null;
-    SSAPropagationCallGraphBuilder builder = new nCFABuilder(1, cha, options, new AnalysisCache(), appSelector, appInterpreter);
+    SSAPropagationCallGraphBuilder builder = new nCFABuilder(1, cha, options, new AnalysisCacheImpl(), appSelector, appInterpreter);
     // nCFABuilder uses type-based heap abstraction by default, but we want allocation sites
     // NOTE: we disable ZeroXInstanceKeys.SMUSH_PRIMITIVE_HOLDERS for this test, since IntWrapper
     // is a primitive holder
@@ -665,8 +688,9 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(test);
     System.err.println("Statement: " + s);
 
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, pcg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
-        ControlDependenceOptions.NONE);
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, pcg, pointerAnalysis, InstanceKey.class,
+        DataDependenceOptions.FULL, ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 1, countAllocations(slice));
     Assert.assertEquals(slice.toString(), 1, countPutfields(slice));
@@ -680,7 +704,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTTHROWCATCH);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -688,7 +712,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
     // compute a data slice
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NONE);
     dumpSlice(slice);
     Assert.assertEquals(slice.toString(), 1, countApplicationAllocations(slice));
@@ -705,7 +730,7 @@ public class SlicerTest {
         TestConstants.SLICE_TESTMESSAGEFORMAT);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -731,9 +756,9 @@ public class SlicerTest {
         TestConstants.SLICE_TESTINETADDR);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
-    SDG sdg = new SDG(cg, builder.getPointerAnalysis(), DataDependenceOptions.NO_BASE_NO_HEAP, ControlDependenceOptions.FULL);
+    SDG<?> sdg = new SDG<>(cg, builder.getPointerAnalysis(), InstanceKey.class, DataDependenceOptions.NO_BASE_NO_HEAP, ControlDependenceOptions.FULL);
     GraphIntegrity.check(sdg);
   }
 
@@ -746,7 +771,7 @@ public class SlicerTest {
         TestConstants.SLICE_JUSTTHROW);
     AnalysisOptions options = CallGraphTestUtil.makeAnalysisOptions(scope, entrypoints);
 
-    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCache(), cha, scope);
+    CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
 
     CGNode main = findMainMethod(cg);
@@ -754,7 +779,8 @@ public class SlicerTest {
     Statement s = findCallToDoNothing(main);
     System.err.println("Statement: " + s);
 
-    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, builder.getPointerAnalysis(), DataDependenceOptions.FULL,
+    final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
+    Collection<Statement> slice = Slicer.computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL,
         ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
     dumpSlice(slice);
   }
@@ -931,8 +957,9 @@ public class SlicerTest {
   public static void dumpSliceToFile(Collection<Statement> slice, String fileName) throws FileNotFoundException {
     File f = new File(fileName);
     FileOutputStream fo = new FileOutputStream(f);
-    PrintWriter w = new PrintWriter(fo);
-    dumpSlice(slice, w);
+    try (final PrintWriter w = new PrintWriter(fo)) {
+      dumpSlice(slice, w);
+    }
   }
 
   public static CGNode findMainMethod(CallGraph cg) {

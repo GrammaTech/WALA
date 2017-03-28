@@ -59,6 +59,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.SSAContextInterpreter;
 import com.ibm.wala.ssa.DefUse;
 import com.ibm.wala.ssa.IR;
+import com.ibm.wala.ssa.IRView;
 import com.ibm.wala.ssa.ISSABasicBlock;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAOptions;
@@ -118,6 +119,11 @@ public class DexIContextInterpreter implements SSAContextInterpreter {
         return cache.getSSACache().findOrCreateIR(node.getMethod(), node.getContext(), options);
     }
 
+    @Override
+    public IRView getIRView(CGNode node) {
+      return getIR(node);
+    }
+
     public DefUse getDU(CGNode node) {
         return cache.getSSACache().findOrCreateDU(getIR(node), node.getContext());
 //      return new DefUse(getIR(node));
@@ -127,4 +133,4 @@ public class DexIContextInterpreter implements SSAContextInterpreter {
         IR ir = getIR(n);
         return ir.getControlFlowGraph();
     }    
-};
+}

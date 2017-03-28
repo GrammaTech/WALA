@@ -62,7 +62,6 @@ public class JDTTypeDictionary extends CAstTypeDictionaryImpl {
   /**
    * 
    * @param ast Needed to get root type "java.lang.Object"
-   * @param translator
    */
   public JDTTypeDictionary(AST ast, JDTIdentityMapper identityMapper) {
     fAst = ast;
@@ -121,15 +120,14 @@ public class JDTTypeDictionary extends CAstTypeDictionaryImpl {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public Collection getSupertypes() {
+    public Collection<CAstType> getSupertypes() {
       if (fEltJdtType.isPrimitive())
         return Collections.singleton(getCAstTypeFor(fAst.resolveWellKnownType("java.lang.Object")));
       // TODO: there is no '.isReference()' as in Polyglot: is this right? enum? I think if it's another array it will
       // just ignore it
       // TEST DOUBLE ARRAYS! and maybe ask someone?
       assert fEltJdtType.isArray() || fEltJdtType.isClass() : "Non-primitive, non-reference array element type!";
-      Collection<CAstType> supers = new ArrayList<CAstType>();
+      Collection<CAstType> supers = new ArrayList<>();
       for (ITypeBinding type : fEltJdtType.getInterfaces()) {
         supers.add(getCAstTypeFor(type));
       }
@@ -160,8 +158,7 @@ public class JDTTypeDictionary extends CAstTypeDictionaryImpl {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public Collection getSupertypes() {
+    public Collection<CAstType> getSupertypes() {
       if (fSuperTypes == null) {
         buildSuperTypes();
       }
@@ -175,7 +172,7 @@ public class JDTTypeDictionary extends CAstTypeDictionaryImpl {
           .getSuperclass();
       int N = fType.getInterfaces().length + 1;
 
-      fSuperTypes = new ArrayList<CAstType>(N);
+      fSuperTypes = new ArrayList<>(N);
       // Following assumes that noone can call getSupertypes() before we have
       // created CAstType's for every type in the program being analyzed.
       fSuperTypes.add(getCAstTypeFor(superType));

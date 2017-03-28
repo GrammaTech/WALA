@@ -52,7 +52,7 @@ public class IFDSExplorer {
     viewIFDS(r, roots, null);
   }
 
-  public static <T, P, F> void viewIFDS(TabulationResult<T, P, F> r, Collection<? extends P> roots, NodeDecorator labels)
+  public static <T, P, F> void viewIFDS(TabulationResult<T, P, F> r, Collection<? extends P> roots, NodeDecorator<T> labels)
       throws WalaException {
     Properties p = null;
     try {
@@ -65,7 +65,7 @@ public class IFDSExplorer {
     viewIFDS(r, roots, labels, scratch);
   }
 
-  public static <T, P, F> void viewIFDS(TabulationResult<T, P, F> r, Collection<? extends P> roots, NodeDecorator labels,
+  public static <T, P, F> void viewIFDS(TabulationResult<T, P, F> r, Collection<? extends P> roots, NodeDecorator<T> labels,
       String scratchDirectory) throws WalaException {
     if (r == null) {
       throw new IllegalArgumentException("r is null");
@@ -98,8 +98,8 @@ public class IFDSExplorer {
     v.setGraphInput(g);
     v.setBlockInput(true);
     v.setRootsInput(roots);
-    ViewIFDSLocalAction<T, P, F> action = (labels == null ? new ViewIFDSLocalAction<T, P, F>(v, r, outputFile, dotFile, dotExe,
-        viewerExe) : new ViewIFDSLocalAction<T, P, F>(v, r, outputFile, dotFile, dotExe, viewerExe, labels));
+    ViewIFDSLocalAction<T, P, F> action = (labels == null ? new ViewIFDSLocalAction<>(v, r, outputFile, dotFile, dotExe,
+        viewerExe) : new ViewIFDSLocalAction<>(v, r, outputFile, dotFile, dotExe, viewerExe, labels));
     v.getPopUpActions().add(action);
     v.run();
 

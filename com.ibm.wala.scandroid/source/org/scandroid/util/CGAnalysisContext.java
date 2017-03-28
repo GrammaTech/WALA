@@ -71,6 +71,7 @@ import com.ibm.wala.dalvik.classLoader.DexIRFactory;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.dataflow.IFDS.ISupergraph;
 import com.ibm.wala.ipa.callgraph.AnalysisCache;
+import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
 import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.CGNode;
@@ -86,7 +87,6 @@ import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.callgraph.propagation.SSAPropagationCallGraphBuilder;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
-import com.ibm.wala.ssa.IRFactory;
 import com.ibm.wala.ssa.ISSABasicBlock;
 import com.ibm.wala.ssa.SSACFG;
 import com.ibm.wala.ssa.SSACFG.BasicBlock;
@@ -144,12 +144,14 @@ public class CGAnalysisContext<E extends ISSABasicBlock> {
 		}
 		analysisOptions.setReflectionOptions(options.getReflectionOptions());
 
-		AnalysisCache cache = new AnalysisCache((IRFactory<IMethod>) new DexIRFactory());
+		AnalysisCache cache = new AnalysisCacheImpl(new DexIRFactory());
 
 		SSAPropagationCallGraphBuilder cgb;
 
 		if (null != options.getSummariesURI()) {
-			extraSummaries.add(new FileInputStream(new File(options.getSummariesURI())));
+			try (final FileInputStream in = new FileInputStream(new File(options.getSummariesURI()))) {
+				extraSummaries.add(in);
+			}
 		}
 
 		cgb = AndroidAnalysisContext.makeZeroCFABuilder(analysisOptions, cache,	cha, scope,

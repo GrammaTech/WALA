@@ -23,7 +23,7 @@ import com.ibm.wala.util.intset.MutableMapping;
 public class SlowNumberedNodeManager<T> implements NumberedNodeManager<T>, Serializable {
 
   /**
-   * A bijection between integer <-> node
+   * A bijection between integer &lt;-&gt; node
    */
   final private MutableMapping<T> map = MutableMapping.make();
 
@@ -103,7 +103,7 @@ public class SlowNumberedNodeManager<T> implements NumberedNodeManager<T>, Seria
    */
   @Override
   public Iterator<T> iterateNodes(IntSet s) {
-    return new NumberedNodeIterator<T>(s, this);
+    return new NumberedNodeIterator<>(s, this);
   }
 
 }

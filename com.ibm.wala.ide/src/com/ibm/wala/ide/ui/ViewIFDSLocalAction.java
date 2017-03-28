@@ -23,8 +23,8 @@ import com.ibm.wala.ssa.SSAGetInstruction;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAPhiInstruction;
 import com.ibm.wala.ssa.analysis.IExplodedBasicBlock;
-import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.Predicate;
+import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.Graph;
 import com.ibm.wala.util.graph.GraphSlicer;
@@ -69,10 +69,10 @@ public class ViewIFDSLocalAction<T, P, F> extends Action {
    */
   private final String pdfViewExe;
 
-  private final NodeDecorator labels;
+  private final NodeDecorator<T> labels;
 
   public ViewIFDSLocalAction(SWTTreeViewer viewer, TabulationResult<T, P, F> result, String pdfFile, String dotFile, String dotExe,
-      String pdfViewExe, NodeDecorator labels) {
+      String pdfViewExe, NodeDecorator<T> labels) {
     if (result == null) {
       throw new IllegalArgumentException("null result");
     }
@@ -97,11 +97,11 @@ public class ViewIFDSLocalAction<T, P, F> extends Action {
     this.dotFile = dotFile;
     this.dotExe = dotExe;
     this.pdfViewExe = gvExe;
-    this.labels = new Labels<T, P, F>(result);
+    this.labels = new Labels<>(result);
     setText("View Local Supergraph");
   }
 
-  private static class Labels<T, P, F> implements NodeDecorator {
+  private static class Labels<T, P, F> implements NodeDecorator<T> {
     private TabulationResult<T, P, F> result;
 
     Labels(TabulationResult<T, P, F> result) {

@@ -50,7 +50,6 @@
 package org.scandroid.util;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -79,6 +78,7 @@ import com.ibm.wala.ipa.callgraph.propagation.cfa.ZeroXCFABuilder;
 import com.ibm.wala.ipa.callgraph.propagation.cfa.ZeroXInstanceKeys;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
+import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.BypassClassTargetSelector;
 import com.ibm.wala.ipa.summaries.BypassMethodTargetSelector;
@@ -114,8 +114,6 @@ public class AndroidAnalysisContext {
 
 	/**
 	 * @param exclusions
-	 * @param classpath
-	 * @param packagename
 	 * @throws IOException
 	 * @throws IllegalArgumentException
 	 * @throws CancelException
@@ -129,7 +127,7 @@ public class AndroidAnalysisContext {
 		this.options = options;
 		scope = AndroidAnalysisScope.setUpAndroidAnalysisScope(options.getClasspath(), exclusions, getClass().getClassLoader(), options.getAndroidLibrary());
 		
-		cha = ClassHierarchy.make(scope);
+		cha = ClassHierarchyFactory.make(scope);
 
 		if (options.classHierarchyWarnings()) {
 			// log ClassHierarchy warnings
@@ -146,7 +144,7 @@ public class AndroidAnalysisContext {
 	// ContextSelector, entry points, reflection options, IR Factory, call graph
 	// type, include library
 	public void buildGraphs(List<Entrypoint> localEntries,
-			InputStream summariesStream) throws CancelException {
+			InputStream summariesStream) {
 
 		
 
@@ -255,7 +253,6 @@ public class AndroidAnalysisContext {
 			throw new IllegalArgumentException("cha cannot be null");
 		}
 
-		InputStream s = null;
 		try {
 			Set<TypeReference> summaryClasses = HashSetFactory.make();
 			Map<MethodReference, MethodSummary> summaries = HashMapFactory.make();
@@ -268,69 +265,51 @@ public class AndroidAnalysisContext {
 			}
 			// for (MethodReference mr : summaries.keySet()) {
 			// 
-			// }
+			// }    
 
-			s = new FileProvider().getInputStreamFromClassLoader(pathToSpec
+			try (final InputStream s = new FileProvider().getInputStreamFromClassLoader(pathToSpec
 					+ File.separator + methodSpec,
-					AndroidAnalysisContext.class.getClassLoader());
+					AndroidAnalysisContext.class.getClassLoader())) {
 
-			XMLMethodSummaryReader nativeSummaries = loadMethodSummaries(scope,
-					s);
+				XMLMethodSummaryReader nativeSummaries = loadMethodSummaries(scope,
+						s);
 
-			summaries.putAll(nativeSummaries.getSummaries());
-			summaryClasses.addAll(nativeSummaries.getAllocatableClasses());
-			if (extraSummary != null) {
-				summaries.put((MethodReference) extraSummary.getMethod(),
-						extraSummary);
-			}
-
-			MethodTargetSelector ms = new BypassMethodTargetSelector(
-					options.getMethodTargetSelector(), summaries,
-					nativeSummaries.getIgnoredPackages(), cha);
-			options.setSelector(ms);
-
-			ClassTargetSelector cs = new BypassClassTargetSelector(
-					options.getClassTargetSelector(), summaryClasses, cha,
-					cha.getLoader(scope.getLoader(Atom
-							.findOrCreateUnicodeAtom("Synthetic"))));
-			options.setSelector(cs);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} finally {
-			if (null != s) {
-				try {
-					s.close();
-				} catch (IOException e) {
-					e.printStackTrace();
+				summaries.putAll(nativeSummaries.getSummaries());
+				summaryClasses.addAll(nativeSummaries.getAllocatableClasses());
+				if (extraSummary != null) {
+					summaries.put((MethodReference) extraSummary.getMethod(),
+							extraSummary);
 				}
+
+				MethodTargetSelector ms = new BypassMethodTargetSelector(
+						options.getMethodTargetSelector(), summaries,
+						nativeSummaries.getIgnoredPackages(), cha);
+				options.setSelector(ms);
+
+				ClassTargetSelector cs = new BypassClassTargetSelector(
+						options.getClassTargetSelector(), summaryClasses, cha,
+						cha.getLoader(scope.getLoader(Atom
+								.findOrCreateUnicodeAtom("Synthetic"))));
+				options.setSelector(cs);
+				
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
 	}
 
 	private static XMLMethodSummaryReader loadMethodSummaries(
-			AnalysisScope scope, InputStream xmlIStream)
-			throws FileNotFoundException {
-		InputStream s = xmlIStream;
-		XMLMethodSummaryReader summary = null;
-
-		try {
-			if (null == s) {
-				s = AndroidAnalysisContext.class.getClassLoader()
-						.getResourceAsStream(
-								pathToSpec + File.separator + methodSpec);
-			}
-			summary = new XMLMethodSummaryReader(s, scope);
-		} finally {
-			try {
-				if (null != s) {
-					s.close();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			AnalysisScope scope, InputStream xmlIStream) {
+		try (InputStream s = xmlIStream != null ? xmlIStream :
+			AndroidAnalysisContext.class.getClassLoader()
+				.getResourceAsStream(
+					pathToSpec + File.separator + methodSpec)) {
+			return new XMLMethodSummaryReader(s, scope);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		return summary;
+		return null;
 	}
 	
 	/**

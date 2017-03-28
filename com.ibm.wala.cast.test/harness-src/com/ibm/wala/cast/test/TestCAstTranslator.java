@@ -18,7 +18,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import com.ibm.wala.cast.ipa.callgraph.CAstCallGraphUtil;
 import com.ibm.wala.cast.ir.ssa.AstIRFactory;
@@ -32,6 +32,7 @@ import com.ibm.wala.core.tests.util.WalaTestCase;
 import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
+import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ssa.IRFactory;
 import com.ibm.wala.ssa.SSAOptions;
 import com.ibm.wala.util.collections.HashMapFactory;
@@ -40,13 +41,13 @@ import com.ibm.wala.util.collections.Pair;
 public abstract class TestCAstTranslator extends WalaTestCase {
 
   protected static class TranslatorAssertions {
-    private final Set<String> classes = new HashSet<String>();
+    private final Set<String> classes = new HashSet<>();
 
-    private final Map<String, String> supers = new HashMap<String, String>();
+    private final Map<String, String> supers = new HashMap<>();
 
-    private final Set<Pair<String, String>> instanceFields = new HashSet<Pair<String, String>>();
+    private final Set<Pair<String, String>> instanceFields = new HashSet<>();
 
-    private final Set<Pair<String, String>> staticFields = new HashSet<Pair<String, String>>();
+    private final Set<Pair<String, String>> staticFields = new HashSet<>();
 
     private final Map<Pair<String, Object>, Object> instanceMethods = HashMapFactory.make();
 
@@ -131,7 +132,7 @@ public abstract class TestCAstTranslator extends WalaTestCase {
 
     AnalysisScope scope = CAstCallGraphUtil.makeScope(fileNames, loaders, getLanguage());
 
-    ClassHierarchy cha = ClassHierarchy.make(scope, loaders, getLanguage());
+    ClassHierarchy cha = ClassHierarchyFactory.make(scope, loaders, getLanguage());
 
     return cha;
   }

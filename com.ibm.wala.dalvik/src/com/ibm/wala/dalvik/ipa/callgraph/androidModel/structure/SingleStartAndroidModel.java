@@ -71,8 +71,6 @@ import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
  *  The incorporated loop is wrapped around user-interaction methods. These are in the section
  *  MULTIPLE_TIMES_IN_LOOP.
  *
- *  {@inheritDoc}
- *
  *  @see        com.ibm.wala.dalvik.ipa.callgraph.androidModel.structure.LoopAndroidModel
  *  @see        com.ibm.wala.dalvik.ipa.callgraph.androidModel.structure.LoopKillAndroidModel
  *  @author     Tobias Blaschke <code@tobiasblaschke.de>
@@ -111,7 +109,7 @@ public class SingleStartAndroidModel extends AbstractAndroidModel {
         paramManager.scopeDown(true);
 
         // Top-Half of Phi-Handling
-        outerStartingPhis = new HashMap<TypeReference, SSAValue>();
+        outerStartingPhis = new HashMap<>();
         List<TypeReference> outerPhisNeeded = returnTypesBetween(ExecutionOrder.START_OF_LOOP,
                 ExecutionOrder.AFTER_LOOP);
         
@@ -146,7 +144,7 @@ public class SingleStartAndroidModel extends AbstractAndroidModel {
         logger.info("Setting block-inner Phis");
         for (TypeReference phiType : outerStartingPhis.keySet()) {
             final SSAValue oldPhi = outerStartingPhis.get(phiType);
-            final List<SSAValue> forPhi = new ArrayList<SSAValue>(2);
+            final List<SSAValue> forPhi = new ArrayList<>(2);
             forPhi.add(paramManager.getSuper(oldPhi.key));
             forPhi.add(paramManager.getCurrent(oldPhi.key));
             

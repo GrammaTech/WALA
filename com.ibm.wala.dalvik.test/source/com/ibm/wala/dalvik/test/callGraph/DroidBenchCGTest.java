@@ -10,6 +10,8 @@
  *******************************************************************************/
 package com.ibm.wala.dalvik.test.callGraph;
 
+import static com.ibm.wala.dalvik.test.util.Util.walaProperties;
+
 import java.io.File;
 import java.net.URI;
 import java.util.Collection;
@@ -40,8 +42,6 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.functions.VoidFunction;
 import com.ibm.wala.util.io.FileUtil;
-
-import static com.ibm.wala.dalvik.test.util.Util.walaProperties;
 
 public abstract class DroidBenchCGTest extends DalvikCallGraphTestBase {
 
@@ -161,7 +161,7 @@ public abstract class DroidBenchCGTest extends DalvikCallGraphTestBase {
   }
   
 	public static Collection<Object[]> generateData(String droidBenchRoot, final URI[] androidLibs, final File androidJavaJar, final String filter) {
-	  final List<Object[]> files = new LinkedList<Object[]>();
+	  final List<Object[]> files = new LinkedList<>();
 	  FileUtil.recurseFiles(new VoidFunction<File>() {
 	    @Override
 	    public void apply(File f) {

@@ -166,7 +166,7 @@ public class AndroidBoot {
             final MethodReference mRef = MethodReference.findOrCreate(AndroidTypes.ActivityThread, MethodReference.initSelector);
             final SSAValue exception = this.pm.getUnmanaged(TypeReference.JavaLangException, "ctor_exc" ); 
             final CallSiteReference site = CallSiteReference.make(pc, mRef, IInvokeInstruction.Dispatch.SPECIAL);
-            final List<SSAValue> params = new ArrayList<SSAValue>(1);
+            final List<SSAValue> params = new ArrayList<>(1);
             params.add(mainThread);
             final SSAInstruction ctorCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
             body.addStatement(ctorCall);
@@ -179,7 +179,8 @@ public class AndroidBoot {
      *
      *  @see    android.app.ContextImpl.createPackageContextAsUser
      */
-    private SSAValue createSystemContext(SSAValue mainThread) {
+    @SuppressWarnings("javadoc")
+	private SSAValue createSystemContext(SSAValue mainThread) {
         final SSAValue systemContext = this.pm.getUnmanaged(AndroidTypes.ContextImpl, "systemContextImpl");
         { // Call ContextImpl.getSystemContext()
             final int pc = this.body.getNextProgramCounter();
@@ -188,7 +189,7 @@ public class AndroidBoot {
             final MethodReference mRef = MethodReference.findOrCreate(AndroidTypes.ActivityThread, mSel);
             final CallSiteReference site = CallSiteReference.make(pc, mRef, IInvokeInstruction.Dispatch.VIRTUAL);
             final SSAValue exception = this.pm.getException();
-            final List<SSAValue> params = new ArrayList<SSAValue>(1);
+            final List<SSAValue> params = new ArrayList<>(1);
             params.add(mainThread);
             final SSAInstruction call = instructionFactory.InvokeInstruction(pc, systemContext, params, exception, site);
             body.addStatement(call);
@@ -211,7 +212,8 @@ public class AndroidBoot {
      *
      *  @see    android.app.ContextImpl.createPackageContextAsUser
      */
-    private SSAValue createPackageContext(final SSAValue mainThread, final SSAValue systemContext) {
+    @SuppressWarnings("javadoc")
+	private SSAValue createPackageContext(final SSAValue mainThread, final SSAValue systemContext) {
         final SSAValue packageContext = this.pm.getUnmanaged(AndroidTypes.ContextImpl, "packageContextImpl");
         { // New-Site
             final int pc = this.body.getNextProgramCounter();
@@ -234,7 +236,7 @@ public class AndroidBoot {
             final MethodReference mRef = MethodReference.findOrCreate(AndroidTypes.ContextImpl, MethodReference.initSelector);
             final SSAValue exception = this.pm.getUnmanaged(TypeReference.JavaLangException, "ctor_exc" ); 
             final CallSiteReference site = CallSiteReference.make(pc, mRef, IInvokeInstruction.Dispatch.SPECIAL);
-            final List<SSAValue> params = new ArrayList<SSAValue>(1);
+            final List<SSAValue> params = new ArrayList<>(1);
             params.add(packageContext);
             final SSAInstruction ctorCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
             body.addStatement(ctorCall);
@@ -334,7 +336,7 @@ public class AndroidBoot {
             final MethodReference mRef = MethodReference.findOrCreate(AndroidTypes.ContextImpl, mSel);
             final SSAValue exception = this.pm.getException();
             final CallSiteReference site = CallSiteReference.make(pc, mRef, IInvokeInstruction.Dispatch.VIRTUAL);
-            final List<SSAValue> params = new ArrayList<SSAValue>(7);
+            final List<SSAValue> params = new ArrayList<>(7);
             params.add(packageContext);
             params.add(nullApk);        // TODO: This would contain a Context too?
             params.add(nullIBinder);     // OK: is null in Android-Sources too

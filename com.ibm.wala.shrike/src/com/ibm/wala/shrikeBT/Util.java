@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import com.ibm.wala.shrikeBT.IInvokeInstruction.Dispatch;
-import com.ibm.wala.shrikeCT.BootstrapMethodsReader.BootstrapMethod;
 import com.ibm.wala.util.collections.Pair;
 
 /**
@@ -169,8 +168,8 @@ public final class Util {
   }
 
   static {
-    typeAliases = new HashMap<String, String>();
-    classAliases = new HashMap<String, String>();
+    typeAliases = new HashMap<>();
+    classAliases = new HashMap<>();
     addAlias("void", "V");
     addAlias("int", "I");
     addAlias("long", "J");

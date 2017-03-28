@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.wala.util.graph.traverse;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -94,13 +95,13 @@ public class FloydWarshall<T> {
   }
   
   public static <T> int[][] shortestPathLengths(NumberedGraph<T> G) {
-    return new FloydWarshall<T>(G).allPairsShortestPaths();
+    return new FloydWarshall<>(G).allPairsShortestPaths();
   }
   
   public static <T> GetPath<T> allPairsShortestPath(final NumberedGraph<T> G) {
      return new FloydWarshall<T>(G) {
        int[][] next = new int[G.getNumberOfNodes()][G.getNumberOfNodes()];
-
+       
        @Override
        protected void pathCallback(int i, int j, int k) {
          next[i][j] = k;
@@ -115,6 +116,22 @@ public class FloydWarshall<T> {
          
          final int[][] paths = allPairsShortestPaths();
          return new GetPath<T>() {
+
+           @Override
+          public String toString() {
+             String s = "";
+             for(int i = 0; i <= G.getMaxNumber(); i++) {
+               for(int j = 0; j <= G.getMaxNumber(); j++) {
+                 try {
+                   s += getPath(G.getNode(i), G.getNode(j));
+                 } catch (UnsupportedOperationException e) {
+                   
+                 }
+               }
+             }
+             return s;
+           }
+
           @Override
           public List<T> getPath(T from, T to) {
             int fn = G.getNumber(from);
@@ -127,7 +144,7 @@ public class FloydWarshall<T> {
                 return Collections.emptyList();
               } else {
                 T in = G.getNode(intermediate);
-                List<T> result = new LinkedList<T>(getPath(from, in));
+                List<T> result = new LinkedList<>(getPath(from, in));
                 result.add(in);
                 result.addAll(getPath(in, to));
                 return result;
@@ -154,7 +171,23 @@ public class FloydWarshall<T> {
       private GetPaths<T> doit() {        
         final int[][] paths = allPairsShortestPaths();
         return new GetPaths<T>() {
-         @Override
+          
+          @Override
+         public String toString() {
+            List<Set<List<T>>> x = new ArrayList<>();
+            for(int i = 0; i <= G.getMaxNumber(); i++) {
+              for(int j = 0; j <= G.getMaxNumber(); j++) {
+                try {
+                  x.add(getPaths(G.getNode(i), G.getNode(j)));
+                } catch (UnsupportedOperationException e) {
+                  
+                }
+              }
+            }
+            return x.toString();
+          }
+
+          @Override
         public Set<List<T>> getPaths(final T from, final T to) {
            int fn = G.getNumber(from);
            int tn = G.getNumber(to);
@@ -166,7 +199,7 @@ public class FloydWarshall<T> {
                List<T> none = Collections.emptyList();
                return Collections.singleton(none);
              } else {
-               final Set<List<T>> result = new HashSet<List<T>>();
+               final Set<List<T>> result = new HashSet<>();
               
                intermediate.foreach(new IntSetAction() {
                 @Override
@@ -174,7 +207,7 @@ public class FloydWarshall<T> {
                   T in = G.getNode(x);
                   for(List<T> pre : getPaths(from, in)) {
                     for(List<T> post : getPaths(in, to)) {
-                      List<T> path = new LinkedList<T>(pre);
+                      List<T> path = new LinkedList<>(pre);
                       path.add(in);
                       path.addAll(post);
                       result.add(path);

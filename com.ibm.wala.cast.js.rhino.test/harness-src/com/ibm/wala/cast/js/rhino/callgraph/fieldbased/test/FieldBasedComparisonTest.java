@@ -2,14 +2,12 @@ package com.ibm.wala.cast.js.rhino.callgraph.fieldbased.test;
 
 import java.io.IOException;
 
-import junit.framework.AssertionFailedError;
-
 import org.junit.Test;
 
 import com.ibm.wala.cast.ir.translator.TranslatorToCAst.Error;
 import com.ibm.wala.cast.js.html.JSSourceExtractor;
-import com.ibm.wala.cast.js.test.TestSimplePageCallGraphShape;
 import com.ibm.wala.cast.js.test.FieldBasedCGUtil.BuilderType;
+import com.ibm.wala.cast.js.test.TestSimplePageCallGraphShape;
 import com.ibm.wala.util.CancelException;
 import com.ibm.wala.util.WalaException;
 
@@ -25,7 +23,7 @@ public class FieldBasedComparisonTest extends AbstractFieldBasedTest {
     }
   }
 
-  @Test(expected = AssertionFailedError.class)
+  @Test(expected = AssertionError.class)
   public void testSkeletonPessimistic() throws IOException, WalaException, Error, CancelException {
     test("pages/skeleton.html", TestSimplePageCallGraphShape.assertionsForSkeleton, BuilderType.PESSIMISTIC);
   }
@@ -40,7 +38,7 @@ public class FieldBasedComparisonTest extends AbstractFieldBasedTest {
     test("pages/skeleton.html", TestSimplePageCallGraphShape.assertionsForSkeleton, BuilderType.OPTIMISTIC_WORKLIST);
   }
 
-  @Test(expected = AssertionFailedError.class)
+  @Test(expected = AssertionError.class)
   public void testSkeleton2Pessimistic() throws IOException, WalaException, Error, CancelException {
     test("pages/skeleton2.html", TestSimplePageCallGraphShape.assertionsForSkeleton2, BuilderType.PESSIMISTIC);
   }

@@ -5,16 +5,14 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.AssertionFailedError;
-
 import org.junit.Before;
 
 import com.ibm.wala.cast.ir.translator.TranslatorToCAst.Error;
 import com.ibm.wala.cast.js.html.DefaultSourceExtractor;
 import com.ibm.wala.cast.js.ipa.callgraph.JSCallGraph;
 import com.ibm.wala.cast.js.test.FieldBasedCGUtil;
-import com.ibm.wala.cast.js.test.TestJSCallGraphShape;
 import com.ibm.wala.cast.js.test.FieldBasedCGUtil.BuilderType;
+import com.ibm.wala.cast.js.test.TestJSCallGraphShape;
 import com.ibm.wala.cast.js.translator.CAstRhinoTranslatorFactory;
 import com.ibm.wala.cast.js.util.CallGraph2JSON;
 import com.ibm.wala.util.CancelException;
@@ -48,8 +46,8 @@ public abstract class AbstractFieldBasedTest extends TestJSCallGraphShape {
         cg = util.buildCG(url, builderType, monitor, false, DefaultSourceExtractor.factory).fst;
         System.err.println(cg);
         verifyGraphAssertions(cg, assertions);
-      } catch(AssertionFailedError afe) {
-        throw new AssertionFailedError(builderType + ": " + afe.getMessage());
+      } catch(AssertionError afe) {
+        throw new AssertionError(builderType + ": " + afe.getMessage());
       } 
     }
     return cg;
@@ -66,8 +64,7 @@ public abstract class AbstractFieldBasedTest extends TestJSCallGraphShape {
     }
   }
 
-  @SuppressWarnings("unused")
-  private void dumpCG(JSCallGraph cg) {
+  protected void dumpCG(JSCallGraph cg) {
   	CallGraph2JSON.IGNORE_HARNESS = false;
   	Map<String, Set<String>> edges = CallGraph2JSON.extractEdges(cg);
   	for(String callsite : edges.keySet())

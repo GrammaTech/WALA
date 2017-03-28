@@ -58,7 +58,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import com.ibm.wala.cast.java.translator.Java2IRTranslator;
 import com.ibm.wala.cast.java.translator.SourceModuleTranslator;
-import com.ibm.wala.cast.java.translator.jdt.JDTJava2CAstTranslator;
 import com.ibm.wala.classLoader.DirectoryTreeModule;
 import com.ibm.wala.classLoader.JarFileModule;
 import com.ibm.wala.classLoader.Module;
@@ -162,7 +161,7 @@ public class JDTSourceModuleTranslator implements SourceModuleTranslator {
     // TODO: group by project and send 'em in
 
     // sort files into projects
-    Map<IProject, Map<ICompilationUnit,EclipseSourceFileModule>> projectsFiles = new HashMap<IProject, Map<ICompilationUnit,EclipseSourceFileModule>>();
+    Map<IProject, Map<ICompilationUnit,EclipseSourceFileModule>> projectsFiles = new HashMap<>();
     for (ModuleEntry m : modules) {
       assert m instanceof EclipseSourceFileModule : "Expecing EclipseSourceFileModule, not " + m.getClass();
       EclipseSourceFileModule entry = (EclipseSourceFileModule) m;

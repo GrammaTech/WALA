@@ -130,9 +130,9 @@ public class Slicer {
    * @return the backward slice of s.
    * @throws CancelException
    */
-  public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
-      DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
-    return computeBackwardSlice(s,cg,pa,dOptions,cOptions);
+  public static <U extends InstanceKey> Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<U> pa,
+      Class<U> instanceKeyClass, DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
+    return computeBackwardSlice(s,cg,pa,instanceKeyClass,dOptions,cOptions);
   }
   
   /**
@@ -140,9 +140,9 @@ public class Slicer {
    * @return the backward slice of s.
    * @throws CancelException
    */
-  public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
-      DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold, long timeoutSec) throws IllegalArgumentException, CancelException {
-    return computeSlice(new SDG(cg, pa, ModRef.make(), dOptions, cOptions), Collections.singleton(s), true, threshold, timeoutSec);
+  public static <U extends InstanceKey> Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<U> pa,
+      Class<U> instanceKeyClass, DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold, long timeoutSec) throws IllegalArgumentException, CancelException {
+    return computeSlice(new SDG<U>(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions), Collections.singleton(s), true, threshold, timeoutSec);
   }
 
   /**
@@ -150,9 +150,10 @@ public class Slicer {
    * @return the forward slice of s.
    * @throws CancelException
    */
-  public static Collection<Statement> computeForwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
+  public static <U extends InstanceKey> Collection<Statement> computeForwardSlice(Statement s, CallGraph cg,
+      PointerAnalysis<U> pa, Class<U> instanceKeyClass,
       DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
-    return computeForwardSlice(s,cg,pa,dOptions,cOptions);
+    return computeForwardSlice(s,cg,pa,instanceKeyClass,dOptions,cOptions);
   }
   
   /**
@@ -160,9 +161,9 @@ public class Slicer {
    * @return the forward slice of s.
    * @throws CancelException
    */
-  public static Collection<Statement> computeForwardSlice(Statement s, CallGraph cg, PointerAnalysis<? extends InstanceKey> pa,
+  public static <U extends InstanceKey> Collection<Statement> computeForwardSlice(Statement s, CallGraph cg, PointerAnalysis<U> pa, Class<U> instanceKeyClass,
       DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold, long timeoutSec) throws IllegalArgumentException, CancelException {
-    return computeSlice(new SDG(cg, pa, ModRef.make(), dOptions, cOptions), Collections.singleton(s), false, threshold, timeoutSec);
+    return computeSlice(new SDG<U>(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions), Collections.singleton(s), false, threshold, timeoutSec);
   }
 
   /**
@@ -272,10 +273,9 @@ public class Slicer {
     
     SliceProblem p = makeSliceProblem(roots, sdg, backward);
 
-    
-    PartiallyBalancedTabulationSolver<Statement, PDG, Object> solver = PartiallyBalancedTabulationSolver
+    PartiallyBalancedTabulationSolver<Statement, PDG<?>, Object> solver = PartiallyBalancedTabulationSolver
         .createPartiallyBalancedTabulationSolver(p, null);
-    TabulationResult<Statement, PDG, Object> tr = solver.solve(threshold, timeoutSec);
+    TabulationResult<Statement, PDG<?>, Object> tr = solver.solve(threshold, timeoutSec);
 
     Collection<Statement> slice = tr.getSupergraphNodesReached();
 
@@ -324,18 +324,18 @@ public class Slicer {
    */
   public static Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<InstanceKey> pointerAnalysis, int threshold, long timeoutSec)
       throws IllegalArgumentException, CancelException {
-    return computeBackwardSlice(s, cg, pointerAnalysis, DataDependenceOptions.FULL, ControlDependenceOptions.FULL, threshold, timeoutSec);
+    return computeBackwardSlice(s, cg, pointerAnalysis, InstanceKey.class, DataDependenceOptions.FULL, ControlDependenceOptions.FULL, threshold, timeoutSec);
   }
 
   /**
    * Tabulation problem representing slicing
    * 
    */
-  public static class SliceProblem implements PartiallyBalancedTabulationProblem<Statement, PDG, Object> {
+  public static class SliceProblem implements PartiallyBalancedTabulationProblem<Statement, PDG<?>, Object> {
 
     private final Collection<Statement> roots;
 
-    private final ISupergraph<Statement, PDG> supergraph;
+    private final ISupergraph<Statement, PDG<?>> supergraph;
 
     private final SliceFunctions f;
 
@@ -378,7 +378,7 @@ public class Slicer {
      * @see com.ibm.wala.dataflow.IFDS.TabulationProblem#getSupergraph()
      */
     @Override
-    public ISupergraph<Statement, PDG> getSupergraph() {
+    public ISupergraph<Statement, PDG<?>> getSupergraph() {
       return supergraph;
     }
 

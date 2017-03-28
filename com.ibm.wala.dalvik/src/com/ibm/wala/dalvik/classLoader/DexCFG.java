@@ -101,7 +101,7 @@ public class DexCFG extends AbstractCFG<Instruction, DexCFG.BasicBlock> implemen
     }
 
     public Instruction[] getInstructions() {
-        return (Instruction[])dexMethod.getDexInstructions();
+        return dexMethod.getDexInstructions();
 
     }
 
@@ -297,6 +297,10 @@ public class DexCFG extends AbstractCFG<Instruction, DexCFG.BasicBlock> implemen
                                 e.printStackTrace();
                                 Assertions.UNREACHABLE();
                             }
+                            IMethod mTarget = cha.resolveMethod(target);
+                            if (mTarget == null) {
+                              goToAllHandlers = true;
+                            }
                         }
                     }
                 }
@@ -356,7 +360,7 @@ public class DexCFG extends AbstractCFG<Instruction, DexCFG.BasicBlock> implemen
                                 IClass caughtClass = cha.lookupClass(caughtException);
                                 // the set "caught" should be the set of exceptions that MUST
                                 // have been caught by the handlers in scope
-                                ArrayList<TypeReference> caught = new ArrayList<TypeReference>(exceptionTypes.size());
+                                ArrayList<TypeReference> caught = new ArrayList<>(exceptionTypes.size());
                                 // check if we should add an edge to the catch block.
                                 for (TypeReference t : exceptionTypes) {
                                     if (t != null) {
@@ -413,7 +417,7 @@ public class DexCFG extends AbstractCFG<Instruction, DexCFG.BasicBlock> implemen
             if (pei == null) {
                 throw new IllegalArgumentException("pei is null");
             }
-            switch (((Instruction) pei).getOpcode()) {
+            switch (pei.getOpcode()) {
             //TODO: Make sure all the important cases and exceptions are covered.
             case AGET:
             case AGET_WIDE:
@@ -641,7 +645,7 @@ public class DexCFG extends AbstractCFG<Instruction, DexCFG.BasicBlock> implemen
         }
 
         public Iterator<Instruction> iterator() {
-            return new ArrayIterator<Instruction>(getInstructions(), getFirstInstructionIndex(), getLastInstructionIndex());
+            return new ArrayIterator<>(getInstructions(), getFirstInstructionIndex(), getLastInstructionIndex());
         }
     }
 

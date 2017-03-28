@@ -77,7 +77,7 @@ public class PropagationSystem extends DefaultFixedPointSolver<PointsToSetVariab
   private final PropagationGraph flowGraph = new PropagationGraph();
 
   /**
-   * bijection from InstanceKey <=>Integer
+   * bijection from InstanceKey &lt;=&gt; Integer
    */
   protected final MutableMapping<InstanceKey> instanceKeys = MutableMapping.make();
 
@@ -283,12 +283,8 @@ public class PropagationSystem extends DefaultFixedPointSolver<PointsToSetVariab
           pk = key;
         }
         FilteredPointerKey fpk = (FilteredPointerKey) pk;
-        if (fpk == null) {
-          Assertions.UNREACHABLE("fpk is null");
-        }
-        if (key == null) {
-          Assertions.UNREACHABLE("key is null");
-        }
+        assert fpk != null;
+        assert key != null;
         if (fpk.getTypeFilter() == null) {
           Assertions.UNREACHABLE("fpk.getTypeFilter() is null");
         }

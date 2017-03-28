@@ -73,7 +73,9 @@ public class DexFileModule implements Module {
 
     public static DexFileModule make(File f) throws IllegalArgumentException, IOException {
     	if (f.getName().endsWith("jar")) {
-    		return new DexFileModule(new JarFile(f));
+    		try (final JarFile jar = new JarFile(f)) {
+    			return new DexFileModule(jar);
+    		}
     	} else {
     		return new DexFileModule(f);
     	}
@@ -107,7 +109,7 @@ public class DexFileModule implements Module {
         }
 
         // create ModuleEntries from ClassDefItem
-        entries = new HashSet<ModuleEntry>();
+        entries = new HashSet<>();
 
         Section<ClassDefItem> cldeff = dexfile.ClassDefsSection;
         for (ClassDefItem cdefitems : cldeff.getItems()) {

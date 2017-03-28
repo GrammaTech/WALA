@@ -21,10 +21,10 @@ import org.eclipse.core.runtime.IPath;
 
 import com.ibm.wala.client.AbstractAnalysisEngine;
 import com.ibm.wala.ide.util.EclipseProjectPath;
-import com.ibm.wala.ipa.callgraph.AnalysisCache;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
 import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilder;
+import com.ibm.wala.ipa.callgraph.IAnalysisCacheView;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.util.config.FileOfClasses;
@@ -49,7 +49,7 @@ abstract public class EclipseProjectAnalysisEngine<P, I extends InstanceKey> ext
   abstract protected EclipseProjectPath<?,P> createProjectPath(P project) throws IOException, CoreException;
 
   @Override
-  abstract protected CallGraphBuilder getCallGraphBuilder(IClassHierarchy cha, AnalysisOptions options, AnalysisCache cache);
+  abstract protected CallGraphBuilder<I> getCallGraphBuilder(IClassHierarchy cha, AnalysisOptions options, IAnalysisCacheView cache);
 
   abstract protected AnalysisScope makeAnalysisScope();
   
@@ -59,8 +59,9 @@ abstract public class EclipseProjectAnalysisEngine<P, I extends InstanceKey> ext
       ePath = createProjectPath(project);
       super.scope = ePath.toAnalysisScope(makeAnalysisScope());
       if (getExclusionsFile() != null) {
-        InputStream is = new File(getExclusionsFile()).exists()? new FileInputStream(getExclusionsFile()): FileProvider.class.getClassLoader().getResourceAsStream(getExclusionsFile());
-        scope.setExclusions(new FileOfClasses(is));
+        try (final InputStream is = new File(getExclusionsFile()).exists()? new FileInputStream(getExclusionsFile()): FileProvider.class.getClassLoader().getResourceAsStream(getExclusionsFile())) {
+          scope.setExclusions(new FileOfClasses(is));
+        }
       }
     } catch (CoreException e) {
       assert false : e.getMessage();

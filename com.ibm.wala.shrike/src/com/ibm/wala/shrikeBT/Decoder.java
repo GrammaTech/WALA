@@ -949,7 +949,7 @@ public abstract class Decoder implements Constants {
   final public void decode() throws InvalidBytecodeException {
     byte[] stackWords = new byte[code.length * 2];
 
-    decoded = new ArrayList<Instruction>();
+    decoded = new ArrayList<>();
     decodedOffset = new int[code.length];
     for (int i = 0; i < decodedOffset.length; i++) {
       decodedOffset[i] = UNSEEN;
@@ -1100,5 +1100,15 @@ public abstract class Decoder implements Constants {
       throw new Error("Call decode() before calling getInstructionsToBytecodes()");
     }
     return instructionsToBytecodes;
+  }
+
+  /**
+   * @return true iff the method decoded by this Decoder contains subroutines (JSRs)
+   */
+  final public boolean containsSubroutines() {
+    if (instructions == null) {
+      throw new Error("Call decode() before calling containsSubroutines()");
+    }
+    return JSRs != null;
   }
 }
