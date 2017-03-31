@@ -132,7 +132,7 @@ public class Slicer {
    */
   public static <U extends InstanceKey> Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<U> pa,
       Class<U> instanceKeyClass, DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
-    return computeBackwardSlice(s,cg,pa,instanceKeyClass,dOptions,cOptions);
+    return computeBackwardSlice(s,cg,pa,instanceKeyClass,dOptions,cOptions, -1, -1);
   }
   
   /**
@@ -153,7 +153,7 @@ public class Slicer {
   public static <U extends InstanceKey> Collection<Statement> computeForwardSlice(Statement s, CallGraph cg,
       PointerAnalysis<U> pa, Class<U> instanceKeyClass,
       DataDependenceOptions dOptions, ControlDependenceOptions cOptions) throws IllegalArgumentException, CancelException {
-    return computeForwardSlice(s,cg,pa,instanceKeyClass,dOptions,cOptions);
+    return computeForwardSlice(s,cg,pa,instanceKeyClass,dOptions,cOptions, -1, -1);
   }
   
   /**
