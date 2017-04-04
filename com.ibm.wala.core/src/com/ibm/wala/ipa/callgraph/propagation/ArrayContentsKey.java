@@ -16,6 +16,9 @@ import com.ibm.wala.classLoader.ArrayClass;
  * A {@link PointerKey} which represents the contents of an array instance.
  */
 public final class ArrayContentsKey extends AbstractFieldPointerKey implements FilteredPointerKey {
+  
+  private Integer hashCode = null;
+  
   public ArrayContentsKey(InstanceKey instance) {
     super(instance);
   }
@@ -32,7 +35,10 @@ public final class ArrayContentsKey extends AbstractFieldPointerKey implements F
 
   @Override
   public int hashCode() {
-    return 1061 * instance.hashCode();
+    if (hashCode == null) {
+      hashCode = 1061 * instance.hashCode();
+    }
+    return hashCode;
   }
 
   @Override

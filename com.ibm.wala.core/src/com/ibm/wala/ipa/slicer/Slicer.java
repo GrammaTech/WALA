@@ -340,6 +340,8 @@ public class Slicer {
     private final SliceFunctions f;
 
     private final boolean backward;
+    
+    private final TabulationDomain<Object, Statement> domain;
 
     public SliceProblem(Collection<Statement> roots, ISDG sdg, boolean backward) {
       this.roots = roots;
@@ -347,6 +349,7 @@ public class Slicer {
       SDGSupergraph forwards = new SDGSupergraph(sdg, backward);
       this.supergraph = backward ? BackwardsSupergraph.make(forwards) : forwards;
       f = new SliceFunctions();
+      domain = new UnorderedDomain<Object, Statement>();
     }
 
     /*
@@ -355,7 +358,7 @@ public class Slicer {
     @Override
     public TabulationDomain<Object, Statement> getDomain() {
       // a dummy
-      return new UnorderedDomain<Object, Statement>();
+      return domain;
     }
 
     /*

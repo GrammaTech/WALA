@@ -22,14 +22,15 @@ import com.ibm.wala.util.intset.SparseIntSet;
  */
 public class ReachabilityFunctions<T> implements IFlowFunctionMap<T> {
 
-
   public final static VectorGenFlowFunction FLOW_REACHES = VectorGenFlowFunction.make(SparseIntSet.singleton(0));
-
+  
+  public final static SparseIntSet emptySet = new SparseIntSet();
+  
   public final static IUnaryFlowFunction KILL_FLOW = new IUnaryFlowFunction() {
     @Override
     public SparseIntSet getTargets(int d1) {
       // kill even the reachability predicate 0.
-      return new SparseIntSet();
+      return emptySet;
     }
     @Override
     public String toString() {
