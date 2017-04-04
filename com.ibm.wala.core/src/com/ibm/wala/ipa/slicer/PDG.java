@@ -14,6 +14,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +66,6 @@ import com.ibm.wala.util.debug.UnimplementedError;
 import com.ibm.wala.util.graph.GraphUtil;
 import com.ibm.wala.util.graph.NumberedGraph;
 import com.ibm.wala.util.graph.dominators.Dominators;
-import com.ibm.wala.util.graph.labeled.SlowSparseNumberedLabeledGraph;
 import com.ibm.wala.util.intset.BitVectorIntSet;
 import com.ibm.wala.util.intset.IntIterator;
 import com.ibm.wala.util.intset.IntSet;
@@ -79,8 +79,8 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
 /** BEGIN Custom change: control deps */                
   public enum Dependency {CONTROL_DEP, DATA_AND_CONTROL_DEP};
   
-  private final SlowSparseNumberedLabeledGraph<Statement, Dependency> delegate =
-    new SlowSparseNumberedLabeledGraph<Statement, Dependency>(Dependency.DATA_AND_CONTROL_DEP);
+  private final PDGIndexedNumberedLabeledGraph<Statement, Dependency> delegate =
+    new PDGIndexedNumberedLabeledGraph<Statement, Dependency>(Dependency.DATA_AND_CONTROL_DEP);
 /** END Custom change: control deps */                
 
   private final static boolean VERBOSE = false;
@@ -679,17 +679,8 @@ public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
 
     // in reaching defs calculation, exclude heap statements that are
     // irrelevant.
-    Predicate f = new Predicate() {
-      @Override public boolean test(Object o) {
-        if (o instanceof HeapStatement) {
-          HeapStatement h = (HeapStatement) o;
-          return h.getLocation().equals(pk);
-        } else {
-          return true;
-        }
-      }
-    };
-    Collection<Statement> relevantStatements = Iterator2Collection.toSet(new FilterIterator<Statement>(iterator(), f));
+    Collection<Statement> relevantStatements = new HashSet<Statement>(delegate.getHeapStatementsForLocation(pk));
+    relevantStatements.addAll(delegate.getNonHeapStatements());
 
     Map<Statement, OrdinalSet<Statement>> heapReachingDefs = new HeapReachingDefs<T>(modRef, heapModel).computeReachingDefs(node, ir, pa, mod,
         relevantStatements, new HeapExclusions(SetComplement.complement(new SingletonSet(t))), cg);
