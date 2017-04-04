@@ -20,10 +20,16 @@ import com.ibm.wala.util.debug.Assertions;
  * flow functions for flow-sensitive context-sensitive slicer
  */
 public class SliceFunctions implements IPartiallyBalancedFlowFunctions<Statement> {
+  
+  private ReachabilityFunctions<Statement> reachabilityFunctions;
+  
+  public SliceFunctions(){
+    reachabilityFunctions = ReachabilityFunctions.createReachabilityFunctions();
+  }
 
   @Override
   public IUnaryFlowFunction getCallFlowFunction(Statement src, Statement dest, Statement ret) {
-    return ReachabilityFunctions.createReachabilityFunctions().getCallFlowFunction(src, dest, ret);
+    return reachabilityFunctions.getCallFlowFunction(src, dest, ret);
   }
 
   @Override
@@ -65,21 +71,21 @@ public class SliceFunctions implements IPartiallyBalancedFlowFunctions<Statement
 
   @Override
   public IUnaryFlowFunction getCallToReturnFlowFunction(Statement src, Statement dest) {
-    return ReachabilityFunctions.createReachabilityFunctions().getCallToReturnFlowFunction(src, dest);
+    return reachabilityFunctions.getCallToReturnFlowFunction(src, dest);
   }
 
   @Override
   public IUnaryFlowFunction getNormalFlowFunction(Statement src, Statement dest) {
-    return ReachabilityFunctions.createReachabilityFunctions().getNormalFlowFunction(src, dest);
+    return reachabilityFunctions.getNormalFlowFunction(src, dest);
   }
 
   @Override
   public IFlowFunction getReturnFlowFunction(Statement call, Statement src, Statement dest) {
-    return ReachabilityFunctions.createReachabilityFunctions().getReturnFlowFunction(call, src, dest);
+    return reachabilityFunctions.getReturnFlowFunction(call, src, dest);
   }
 
   public IFlowFunction getReturnFlowFunction(Statement src, Statement dest) {
-    return ReachabilityFunctions.createReachabilityFunctions().getReturnFlowFunction(src, dest);
+    return reachabilityFunctions.getReturnFlowFunction(src, dest);
   }
 
   @Override
