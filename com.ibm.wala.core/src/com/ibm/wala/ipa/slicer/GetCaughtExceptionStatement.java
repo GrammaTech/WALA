@@ -10,12 +10,14 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ssa.SSAGetCaughtExceptionInstruction;
 
 /**
  * identifier of a GetCaughtException instruction
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.GetCaughtExceptionStatementSerializer.class)
 public class GetCaughtExceptionStatement extends Statement {
   private final SSAGetCaughtExceptionInstruction st;
 

@@ -10,12 +10,14 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ssa.SSAPhiInstruction;
 
 /**
  * identifier of a phi instruction
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
 public class PhiStatement extends Statement {
   private final SSAPhiInstruction phi;
 

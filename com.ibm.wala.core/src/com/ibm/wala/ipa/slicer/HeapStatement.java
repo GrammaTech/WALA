@@ -10,10 +10,12 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.HeapStatementSerializer.class)
 public abstract class HeapStatement extends Statement {
 
   private final PointerKey loc;
@@ -28,7 +30,7 @@ public abstract class HeapStatement extends Statement {
     this.loc = loc;
   }
 
-
+  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.HeapParamCallerSerializer.class)
   public final static class HeapParamCaller extends HeapStatement {
     // index into the IR instruction array of the call statements
     private final int callIndex;
@@ -76,7 +78,8 @@ public abstract class HeapStatement extends Statement {
       }
     }
   }
-
+  
+  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
   public final static class HeapParamCallee extends HeapStatement {
       
     private Integer hashCode = null;
@@ -115,6 +118,7 @@ public abstract class HeapStatement extends Statement {
     }
   }
 
+  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.HeapReturnCallerSerializer.class)
   public final static class HeapReturnCaller extends HeapStatement {
     // index into the instruction array of the relevant call instruction
     private final int callIndex;
@@ -164,6 +168,7 @@ public abstract class HeapStatement extends Statement {
     }
   }
 
+  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
   public final static class HeapReturnCallee extends HeapStatement {
       
     private Integer hashCode = null;

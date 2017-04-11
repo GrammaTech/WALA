@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ssa.SSAInstruction;
 
@@ -17,6 +18,7 @@ import com.ibm.wala.ssa.SSAInstruction;
  * A {@link Statement} which carries an instruction index, representing the index of an {@link SSAInstruction} in the IR instruction
  * array.
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.StatementWithInstructionIndexSerializer.class)
 public abstract class StatementWithInstructionIndex extends Statement {
 
   private final int instructionIndex;
