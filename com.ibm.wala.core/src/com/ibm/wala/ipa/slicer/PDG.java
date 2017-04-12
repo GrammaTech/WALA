@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.analysis.stackMachine.AbstractIntStackMachine;
 import com.ibm.wala.cfg.ControlFlowGraph;
 import com.ibm.wala.cfg.cdg.ControlDependenceGraph;
@@ -74,6 +75,7 @@ import com.ibm.wala.util.intset.OrdinalSet;
 /**
  * Program dependence graph for a single call graph node
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.PDGSerializer.class)
 public class PDG<T extends InstanceKey> implements NumberedGraph<Statement> {
 
 /** BEGIN Custom change: control deps */                

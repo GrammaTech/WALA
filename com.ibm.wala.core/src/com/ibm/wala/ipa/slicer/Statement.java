@@ -10,13 +10,15 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 
 /**
  * Identifier of a statement in an SDG.
  */
-@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.StatementSerializer.class)
+@JsonSerialize(using = com.ibm.wala.ipa.slicer.json.StatementSerializer.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public abstract class Statement {
   public static enum Kind {
     NORMAL, PHI, PI, CATCH, PARAM_CALLER, PARAM_CALLEE, NORMAL_RET_CALLER, NORMAL_RET_CALLEE, EXC_RET_CALLER, EXC_RET_CALLEE, HEAP_PARAM_CALLER, HEAP_PARAM_CALLEE, HEAP_RET_CALLER, HEAP_RET_CALLEE, METHOD_ENTRY, METHOD_EXIT
