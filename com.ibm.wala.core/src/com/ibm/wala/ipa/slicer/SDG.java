@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
@@ -53,6 +54,7 @@ import com.ibm.wala.util.intset.OrdinalSet;
  * 
  * Prototype implementation. Not efficient.
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.SDGSerializer.class)
 public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement> implements ISDG {
 
   /**
