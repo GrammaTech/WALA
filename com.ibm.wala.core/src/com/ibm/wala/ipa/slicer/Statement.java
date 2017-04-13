@@ -11,13 +11,11 @@
 package com.ibm.wala.ipa.slicer;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 
 /**
  * Identifier of a statement in an SDG.
  */
-@JsonSerialize(using = com.ibm.wala.ipa.slicer.json.StatementSerializer.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public abstract class Statement {
   public static enum Kind {

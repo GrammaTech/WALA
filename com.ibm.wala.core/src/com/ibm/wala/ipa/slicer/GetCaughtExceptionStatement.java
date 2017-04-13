@@ -17,7 +17,7 @@ import com.ibm.wala.ssa.SSAGetCaughtExceptionInstruction;
 /**
  * identifier of a GetCaughtException instruction
  */
-@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.GetCaughtExceptionStatementSerializer.class)
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
 public class GetCaughtExceptionStatement extends Statement {
   private final SSAGetCaughtExceptionInstruction st;
 

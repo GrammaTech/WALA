@@ -2,19 +2,19 @@ package com.ibm.wala.ipa.slicer.json;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
+import com.ibm.wala.ssa.SSAInstruction;
 
 import java.io.IOException;
 
 /**
- * Serializer for NormalStatements; includes info on whether the instruction is
- * an invocation, needed for computing the result of
- * {@link com.ibm.wala.ipa.slicer.SDGSupergraph#isCall}
+ * Serializer for NormalStatements; includes info needed for computing the
+ * result of {@link com.ibm.wala.ipa.slicer.SDGSupergraph#isCall} as well as for
+ * computing edges between different PDGs.
  */
 public class NormalStatementSerializer extends StdSerializer<NormalStatement> {
 
@@ -36,9 +36,22 @@ public class NormalStatementSerializer extends StdSerializer<NormalStatement> {
 
   @Override
   public void serialize(NormalStatement s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-    JsonSerializer<Object> superclassSerializer = serializerProvider.findValueSerializer(s.getClass().getSuperclass());
-    superclassSerializer.serialize(s, jsonGenerator, serializerProvider);
-    jsonGenerator.writeBooleanField("isAbstractInvokeInstruction",
-        s.getInstruction() instanceof SSAAbstractInvokeInstruction ? true : false);
+    jsonGenerator.writeNumberField("instructionIndex", s.getInstructionIndex());
+    SSAInstruction instruction = s.getInstruction();
+    boolean isAbstractInvokeInstruction = instruction instanceof SSAAbstractInvokeInstruction;
+    jsonGenerator.writeBooleanField("isAbstractInvokeInstruction", isAbstractInvokeInstruction);
+    if (isAbstractInvokeInstruction) {
+      SSAAbstractInvokeInstruction call = (SSAAbstractInvokeInstruction) instruction;
+      jsonGenerator.writeBooleanField("isDispatch", call.isDispatch());
+      if (call.isDispatch()) {
+        jsonGenerator.writeNumberField("receiver", call.getReceiver());
+      }
+      jsonGenerator.writeFieldName("parameters");
+      jsonGenerator.writeStartArray();
+      for (int i = 0; i < call.getNumberOfParameters(); i++) {
+        jsonGenerator.writeNumber(call.getUse(i));
+      }
+      jsonGenerator.writeEndArray();
+    }
   }
 }

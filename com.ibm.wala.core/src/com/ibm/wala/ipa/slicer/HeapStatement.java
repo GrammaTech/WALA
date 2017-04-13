@@ -30,7 +30,6 @@ public abstract class HeapStatement extends Statement {
     this.loc = loc;
   }
 
-  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.HeapParamCallerSerializer.class)
   public final static class HeapParamCaller extends HeapStatement {
     // index into the IR instruction array of the call statements
     private final int callIndex;
@@ -79,7 +78,6 @@ public abstract class HeapStatement extends Statement {
     }
   }
   
-  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
   public final static class HeapParamCallee extends HeapStatement {
       
     private Integer hashCode = null;
@@ -118,7 +116,6 @@ public abstract class HeapStatement extends Statement {
     }
   }
 
-  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.HeapReturnCallerSerializer.class)
   public final static class HeapReturnCaller extends HeapStatement {
     // index into the instruction array of the relevant call instruction
     private final int callIndex;
@@ -168,7 +165,6 @@ public abstract class HeapStatement extends Statement {
     }
   }
 
-  @JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
   public final static class HeapReturnCallee extends HeapStatement {
       
     private Integer hashCode = null;

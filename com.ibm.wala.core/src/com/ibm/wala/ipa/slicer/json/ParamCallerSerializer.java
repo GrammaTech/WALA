@@ -12,7 +12,6 @@ package com.ibm.wala.ipa.slicer.json;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -21,7 +20,8 @@ import com.ibm.wala.ipa.slicer.ParamCaller;
 import java.io.IOException;
 
 /**
- * Serializer for ParamCaller statements, includes the value number
+ * Serializer for ParamCaller statements, includes the value number and call
+ * instruction index.
  */
 public class ParamCallerSerializer extends StdSerializer<ParamCaller> {
 
@@ -43,8 +43,7 @@ public class ParamCallerSerializer extends StdSerializer<ParamCaller> {
 
   @Override
   public void serialize(ParamCaller s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-    JsonSerializer<Object> superclassSerializer = serializerProvider.findValueSerializer(s.getClass().getSuperclass());
-    superclassSerializer.serialize(s, jsonGenerator, serializerProvider);
     jsonGenerator.writeNumberField("value", s.getValueNumber());
+    jsonGenerator.writeNumberField("callIndex", s.getInstructionIndex());
   }
 }

@@ -1,19 +1,20 @@
 package com.ibm.wala.ipa.slicer.json;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.ibm.wala.ipa.slicer.HeapStatement;
-import com.ibm.wala.ipa.slicer.Statement;
+import com.ibm.wala.ipa.slicer.HeapStatement.HeapParamCaller;
+import com.ibm.wala.ipa.slicer.HeapStatement.HeapReturnCaller;
+
 import java.io.IOException;
 
 /**
- * Class for serializing information about locations in statements that extend
+ * Class for serializing information about locations and call indexes as
+ * appropriate in statements that extend
  * {@link com.ibm.wala.ipa.slicer.HeapStatement}.
- * {@link #serialize(HeapStatement, JsonGenerator, SerializerProvider)} is only
- * intended to be called by the serialize() method of a subtype.
- *
  */
 public class HeapStatementSerializer extends StdSerializer<HeapStatement> {
 
@@ -26,11 +27,22 @@ public class HeapStatementSerializer extends StdSerializer<HeapStatement> {
   }
 
   @Override
+  public void serializeWithType(HeapStatement s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider,
+      TypeSerializer typeSerializer) throws IOException, JsonGenerationException {
+    typeSerializer.writeTypePrefixForObject(this, jsonGenerator, s.getClass());
+    serialize(s, jsonGenerator, serializerProvider);
+    typeSerializer.writeTypeSuffixForObject(this, jsonGenerator);
+  }
+
+  @Override
   public void serialize(HeapStatement s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-    // serialize CGNode info
-    JsonSerializer<Object> superclassSerializer = serializerProvider.findValueSerializer(Statement.class);
-    superclassSerializer.serialize(s, jsonGenerator, serializerProvider);
-    jsonGenerator.writeStringField("loc", s.getLocation().toString());
+    jsonGenerator.writeNumberField("locationHashCode", s.getLocation().hashCode());
+    jsonGenerator.writeNumberField("locationToStringHashCode", s.getLocation().toString().hashCode());
+    if (s instanceof HeapParamCaller) {
+      jsonGenerator.writeNumberField("callIndex", ((HeapParamCaller) s).getCallIndex());
+    } else if (s instanceof HeapReturnCaller) {
+      jsonGenerator.writeNumberField("callIndex", ((HeapReturnCaller) s).getCallIndex());
+    }
   }
 
 }
