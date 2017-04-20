@@ -27,7 +27,7 @@ public class ReturnValueKey extends NodeKey {
 
   @Override
   public boolean equals(Object obj) {
-    return (obj instanceof ReturnValueKey) && super.internalEquals(obj);
+    return (obj.getClass().equals(this.getClass())) && super.internalEquals(obj);
   }
 
   @Override
