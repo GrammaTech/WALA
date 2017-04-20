@@ -35,37 +35,44 @@ public class SDGSerializer extends StdSerializer<SDG<? extends InstanceKey>> {
     jsonGenerator.writeStartObject();
     jsonGenerator.writeStringField("controlDeps", sdg.getCOptions().toString());
     jsonGenerator.writeStringField("dataDeps", sdg.getDOptions().toString());
+
+    // write the PDGs
+    CallGraph cg = sdg.getCallGraph();
+    jsonGenerator.writeFieldName("pdgs");
+    jsonGenerator.writeStartArray();
+    for (CGNode cgNode : cg) {
+      jsonGenerator.writeStartObject();
+      jsonGenerator.writeNumberField("nodeId", cg.getNumber(cgNode));
+      jsonGenerator.writeObjectField("pdg", sdg.getPDG(cgNode));
+      jsonGenerator.writeEndObject();
+    }
+    jsonGenerator.writeEndArray();
+
     // write info about call targets
     jsonGenerator.writeFieldName("callTargetInfo");
-    jsonGenerator.writeStartObject();
-    CallGraph cg = sdg.getCallGraph();
+    jsonGenerator.writeStartArray();
     for (CGNode cgNode : cg) {
-      jsonGenerator.writeNumberField("nodeID", cg.getNumber(cgNode));
-      jsonGenerator.writeFieldName("callTargets");
       jsonGenerator.writeStartObject();
+      jsonGenerator.writeNumberField("nodeId", cg.getNumber(cgNode));
+      jsonGenerator.writeFieldName("callTargets");
+      jsonGenerator.writeStartArray();
       Iterator<CallSiteReference> callSiteIterator = cgNode.iterateCallSites();
       while (callSiteIterator.hasNext()) {
+        jsonGenerator.writeStartObject();
         CallSiteReference callSite = callSiteIterator.next();
         jsonGenerator.writeNumberField("callSite", callSite.getProgramCounter());
-        jsonGenerator.writeFieldName("targetNodeIDs");
+        jsonGenerator.writeFieldName("targetNodeIds");
         jsonGenerator.writeStartArray();
         for (CGNode targetNode : cg.getPossibleTargets(cgNode, callSite)) {
           jsonGenerator.writeNumber(cg.getNumber(targetNode));
         }
         jsonGenerator.writeEndArray();
+        jsonGenerator.writeEndObject();
       }
+      jsonGenerator.writeEndArray();
       jsonGenerator.writeEndObject();
     }
-    jsonGenerator.writeEndObject();
-    // now write the PDGs
-    jsonGenerator.writeFieldName("pdgs");
-    jsonGenerator.writeStartObject();
-    for (CGNode cgNode : cg) {
-      jsonGenerator.writeNumberField("nodeID", cg.getNumber(cgNode));
-      jsonGenerator.writeObjectField("pdg", sdg.getPDG(cgNode));
-    }
-    jsonGenerator.writeEndObject();
+    jsonGenerator.writeEndArray();
     jsonGenerator.writeEndObject();
   }
-
 }

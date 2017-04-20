@@ -39,9 +39,9 @@ public class HeapStatementSerializer extends StdSerializer<HeapStatement> {
     jsonGenerator.writeNumberField("locationHashCode", s.getLocation().hashCode());
     jsonGenerator.writeNumberField("locationToStringHashCode", s.getLocation().toString().hashCode());
     if (s instanceof HeapParamCaller) {
-      jsonGenerator.writeNumberField("callIndex", ((HeapParamCaller) s).getCallIndex());
+      jsonGenerator.writeNumberField("callSite", ((HeapParamCaller) s).getCall().getProgramCounter());
     } else if (s instanceof HeapReturnCaller) {
-      jsonGenerator.writeNumberField("callIndex", ((HeapReturnCaller) s).getCallIndex());
+      jsonGenerator.writeNumberField("callSite", ((HeapReturnCaller) s).getCall().getProgramCounter());
     }
   }
 

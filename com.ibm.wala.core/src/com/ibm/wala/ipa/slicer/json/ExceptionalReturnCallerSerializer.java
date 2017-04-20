@@ -34,7 +34,7 @@ public class ExceptionalReturnCallerSerializer extends StdSerializer<Exceptional
   @Override
   public void serialize(ExceptionalReturnCaller s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
       throws IOException {
-    jsonGenerator.writeNumberField("callIndex", s.getInstructionIndex());
+    jsonGenerator.writeNumberField("callSite", s.getInstruction().getProgramCounter());
   }
 
 }

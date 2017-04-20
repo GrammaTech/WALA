@@ -36,12 +36,12 @@ public class NormalStatementSerializer extends StdSerializer<NormalStatement> {
 
   @Override
   public void serialize(NormalStatement s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-    jsonGenerator.writeNumberField("instructionIndex", s.getInstructionIndex());
     SSAInstruction instruction = s.getInstruction();
     boolean isAbstractInvokeInstruction = instruction instanceof SSAAbstractInvokeInstruction;
     jsonGenerator.writeBooleanField("isAbstractInvokeInstruction", isAbstractInvokeInstruction);
     if (isAbstractInvokeInstruction) {
       SSAAbstractInvokeInstruction call = (SSAAbstractInvokeInstruction) instruction;
+      jsonGenerator.writeNumberField("callSite", call.getProgramCounter());
       jsonGenerator.writeBooleanField("isDispatch", call.isDispatch());
       if (call.isDispatch()) {
         jsonGenerator.writeNumberField("receiver", call.getReceiver());

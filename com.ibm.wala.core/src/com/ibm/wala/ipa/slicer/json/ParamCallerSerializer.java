@@ -44,6 +44,6 @@ public class ParamCallerSerializer extends StdSerializer<ParamCaller> {
   @Override
   public void serialize(ParamCaller s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
     jsonGenerator.writeNumberField("value", s.getValueNumber());
-    jsonGenerator.writeNumberField("callIndex", s.getInstructionIndex());
+    jsonGenerator.writeNumberField("callSite", s.getInstruction().getProgramCounter());
   }
 }

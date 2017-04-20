@@ -10,8 +10,8 @@ import com.ibm.wala.ipa.slicer.NormalReturnCaller;
 import java.io.IOException;
 
 /**
- * Serializer for NormalReturnCaller statements, includes the call
- * instruction index.
+ * Serializer for NormalReturnCaller statements, includes the call instruction
+ * index.
  */
 public class NormalReturnCallerSerializer extends StdSerializer<NormalReturnCaller> {
 
@@ -34,7 +34,6 @@ public class NormalReturnCallerSerializer extends StdSerializer<NormalReturnCall
   @Override
   public void serialize(NormalReturnCaller s, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
       throws IOException {
-    jsonGenerator.writeNumberField("callIndex", s.getInstructionIndex());
+    jsonGenerator.writeNumberField("callSite", s.getInstruction().getProgramCounter());
   }
-
 }

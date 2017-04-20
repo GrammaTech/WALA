@@ -65,14 +65,16 @@ public class PDGSerializer extends StdSerializer<PDG<? extends InstanceKey>> {
     while (it.hasNext()) {
       Statement src = it.next();
       int srcNum = pdg.getNumber(src);
+      jsonGenerator.writeStartObject();
+      jsonGenerator.writeNumberField("node", srcNum);
+      jsonGenerator.writeFieldName("successors");
+      jsonGenerator.writeStartArray();
       Iterator<Statement> succIterator = pdg.getSuccNodes(src);
       while (succIterator.hasNext()) {
-        int dstNum = pdg.getNumber(succIterator.next());
-        jsonGenerator.writeStartObject();
-        jsonGenerator.writeNumberField("src", srcNum);
-        jsonGenerator.writeNumberField("dst", dstNum);
-        jsonGenerator.writeEndObject();
+        jsonGenerator.writeNumber(pdg.getNumber(succIterator.next()));
       }
+      jsonGenerator.writeEndArray();
+      jsonGenerator.writeEndObject();
     }
     jsonGenerator.writeEndArray();
     jsonGenerator.writeEndObject();
