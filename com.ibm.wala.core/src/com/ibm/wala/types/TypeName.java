@@ -245,6 +245,8 @@ public final class TypeName implements Serializable {
      * The class name, like "Object" or "Z"
      */
     private final Atom className;
+    
+    private String stringRepresentation; // cache toString() for performance
 
     /**
      * Dimensionality: -1 => primitive 
@@ -299,16 +301,17 @@ public final class TypeName implements Serializable {
 
     @Override
     public String toString() {
-      StringBuffer result = new StringBuffer();
-      toStringPrefix(result);
-      
-      if (packageName != null) {
-        result.append(packageName.toString());
-        result.append("/");
+      if (stringRepresentation == null) {
+        StringBuffer result = new StringBuffer();
+        toStringPrefix(result);
+        if (packageName != null) {
+          result.append(packageName.toString());
+          result.append("/");
+        }
+        result.append(className.toString());
+        stringRepresentation = result.toString();
       }
-      result.append(className.toString());
-
-      return result.toString();
+      return stringRepresentation;
     }
 
     private void toStringPrefix(StringBuffer result) {
