@@ -40,8 +40,20 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   // internal data structures
   private ControlDependenceOptions cOptions;
   private DataDependenceOptions dOptions;
+  // pdgIds for those CG Nodes that are uninformative for reflection
+  private Set<Integer> cgNodesUninfForReflection;
   // pdgId -> call site -> pdgIds of call targets
   private Table<Integer, Integer, Set<Integer>> callTargets;
+  // pdgId -> call site -> id of statement with call instruction
+  private Table<Integer, Integer, Long> callInstructions;
+
+  // id of statement with call instruction that is a dispatch -> receiver
+  private Map<Long, Integer> receiverInfo;
+  // id of statement with call instruction -> set of params
+  private Map<Long, List<Integer>> invokeInstructionParams;
+  // id of statement that is a PARAM_CALLER or CALLEE -> value number
+  private Map<Long, Integer> paramValueNumbers;
+
   // maps used to compare locations for HeapStatements
   private Map<Long, Integer> locationHashCodes;
   private Map<Long, Integer> locationToStringHashCodes;
@@ -88,6 +100,11 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     retStmtsForSite = HashBasedTable.create();
     stmtsToCallSites = new HashMap<Long, Integer>();
     callTargets = HashBasedTable.create();
+    cgNodesUninfForReflection = new HashSet<Integer>();
+    callInstructions = HashBasedTable.create();
+    receiverInfo = new HashMap<Long, Integer>();
+    invokeInstructionParams = new HashMap<Long, List<Integer>>();
+    paramValueNumbers = new HashMap<Long, Integer>();
     locationHashCodes = new HashMap<Long, Integer>();
     locationToStringHashCodes = new HashMap<Long, Integer>();
 
@@ -138,6 +155,10 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
       // read PDG into memory
       JsonNode jsonNode = parser.readValueAsTree();
       int pdgId = jsonNode.get("nodeId").intValue();
+
+      if (jsonNode.get("pdg").get("isUninformativeForReflection").asBoolean()) {
+        cgNodesUninfForReflection.add(pdgId);
+      }
 
       // process nodes
       JsonNode statements = jsonNode.get("pdg").get("nodes");
@@ -205,6 +226,19 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
           callStmtsForSite.put(pdgId, callSite, current);
         }
         current.add(longId);
+        if (stmtKind == Statement.Kind.NORMAL.ordinal()) {
+          callInstructions.put(pdgId, callSite, longId);
+          boolean isDispatch = stmt.get("statement").get("isDispatch").asBoolean();
+          if (isDispatch) {
+            receiverInfo.put(longId, stmt.get("statement").get("receiver").asInt());
+          }
+          Iterator<JsonNode> paramIter = stmt.get("statement").get("parameters").iterator();
+          List<Integer> params = new ArrayList<Integer>();
+          while (paramIter.hasNext()) {
+            params.add(paramIter.next().asInt());
+          }
+          invokeInstructionParams.put(longId, params);
+        }
       } else if (retStmtTypes.contains(stmtKind)) {
         Set<Long> current = retStmtsForSite.get(pdgId, callSite);
         if (current == null) {
@@ -218,6 +252,10 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     if (heapStmtTypes.contains(stmtKind)) {
       locationHashCodes.put(longId, stmt.get("statement").get("locationHashCode").asInt());
       locationToStringHashCodes.put(longId, stmt.get("statement").get("locationToStringHashCode").asInt());
+    }
+
+    if (stmtKind == Statement.Kind.PARAM_CALLEE.ordinal() || stmtKind == Statement.Kind.PARAM_CALLER.ordinal()) {
+      paramValueNumbers.put(longId, stmt.get("statement").get("value").asInt());
     }
   }
 
@@ -331,7 +369,13 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         Set<Integer> targets = callTargets.get(pdgId, callSite);
         if (targets != null) {
           for (int target : targets) {
-            computeInterproceduralSuccessors(callStatement, procEntries.get(target));
+            if (getKind(callStatement) == Statement.Kind.PARAM_CALLER.ordinal() && !dOptions.equals(DataDependenceOptions.NONE)) {
+              Long callInstruction = callInstructions.get(pdgId, callSite);
+              boolean uninfForReflection = cgNodesUninfForReflection.contains(target);
+              computeParamCallerSuccessors(callStatement, procEntries.get(target), callInstruction, uninfForReflection);
+            } else {
+              computeInterproceduralSuccessors(callStatement, procEntries.get(target));
+            }
           }
         }
       }
@@ -355,18 +399,60 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   }
 
   /**
-   * Add all appropriate interprocedural edges from callStatement to any entry
-   * statement in procedureEntries.
+   * Add all appropriate interprocedural edges from call to any entry statement
+   * in procedureEntries.
    * 
    * @precondition the method whose entries are in procedureEntries is a
-   *               possible call target for the call site associated with
-   *               callStatement.
+   *               possible call target for the call site associated with call.
+   * 
+   * @precondition !dOptions.equals(DataDependenceOptions.NONE)
    * 
    * @see com.ibm.wala.ipa.slicer.SDG.Edges#hasEdge(Statement, Statement)
    * 
    * @param call
-   *          a call statement (PARAM_CALLER, HEAP_PARAM_CALLER or NORMAL with
-   *          invoke instruction)
+   *          a PARAM_CALLER statement
+   * @param procedureEntries
+   *          entry points (PARAM_CALLEE, HEAP_PARAM_CALLEE, METHOD_ENTRY) for a
+   *          specific procedure
+   * @param uninfForReflection
+   *          whether callee node is uninformative for reflection
+   * @param callInstruction
+   *          long id of actual invoke instruction for the call
+   */
+  private void computeParamCallerSuccessors(Long call, Long[] procedureEntries, Long callInstruction, boolean uninfForReflection) {
+    for (Long stmt : procedureEntries) {
+      if (getKind(stmt) == Statement.Kind.PARAM_CALLEE.ordinal()) {
+        if (dOptions.isTerminateAtCast()) {
+          Integer receiver = receiverInfo.get(callInstruction);
+          if (receiver != null && receiver.equals(paramValueNumbers.get(call)))
+            continue;
+          if (uninfForReflection)
+            continue;
+        }
+        List<Integer> callerParams = invokeInstructionParams.get(callInstruction);
+        for (int i = 0; i < callerParams.size(); i++) {
+          if (callerParams.get(i) == paramValueNumbers.get(call)) {
+            if (paramValueNumbers.get(stmt) == i + 1) {
+              addEdge(call, stmt);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Add all appropriate interprocedural edges from call to any entry statement
+   * in procedureEntries.
+   * 
+   * @precondition the method whose entries are in procedureEntries is a
+   *               possible call target for the call site associated with call.
+   * 
+   * @see com.ibm.wala.ipa.slicer.SDG.Edges#hasEdge(Statement, Statement)
+   * 
+   * @param call
+   *          a call statement other than PARAM_CALLER (HEAP_PARAM_CALLER or
+   *          NORMAL with invoke instruction)
    * @param procedureEntries
    *          entry points (PARAM_CALLEE, HEAP_PARAM_CALLEE, METHOD_ENTRY) for a
    *          specific procedure
@@ -378,15 +464,6 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         for (Long stmt : procedureEntries) {
           if (getKind(stmt) == Statement.Kind.METHOD_ENTRY.ordinal()) {
             addEdge(call, stmt);
-          }
-        }
-      }
-      break;
-    case PARAM_CALLER:
-      if (!dOptions.equals(DataDependenceOptions.NONE)) {
-        for (Long stmt : procedureEntries) {
-          if (getKind(stmt) == Statement.Kind.PARAM_CALLEE.ordinal()) {
-            // TODO
           }
         }
       }
@@ -407,10 +484,10 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
 
   /**
    * Add all appropriate interprocedural edges from any procedure exit statement
-   * statement in procedureExits to retStatement.
+   * statement in procedureExits to ret.
    * 
    * @precondition the method whose exits are in procedureExits is a possible
-   *               call target for the call site associated with retStatement.
+   *               call target for the call site associated with ret.
    * 
    * @precondition !dOptions.equals(DataDependenceOptions.NONE)
    * 
