@@ -32,5 +32,13 @@ public class ReturnValueKeyWithFilter extends ReturnValueKey implements Filtered
   public TypeFilter getTypeFilter() {
     return typeFilter;
   }
+  
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+    return (obj.getClass() == ReturnValueKeyWithFilter.class) && super.internalEquals(obj);
+  }
 
 }
