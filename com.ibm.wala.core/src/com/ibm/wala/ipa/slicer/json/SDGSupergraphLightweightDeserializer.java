@@ -108,6 +108,8 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     locationHashCodes = new HashMap<Long, Integer>();
     locationToStringHashCodes = new HashMap<Long, Integer>();
 
+    long startTime = System.currentTimeMillis();
+
     parseControlAndDataDeps(parser);
     parsePDGs(parser);
     int intraprocEdgeCounter = 0;
@@ -118,8 +120,11 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     parseCallTargetInfo(parser);
     populateInterproceduralEdges();
 
+    long endTime = System.currentTimeMillis();
+    System.out.println("Time to deserialize was " + (endTime - startTime) / 1000 + " seconds.");
     System.out.println("Number of nodes: " + successors.keySet().size());
-    System.out.println("Number of edges: intraprocedural " + intraprocEdgeCounter + ", interprocedural " + interprocEdgeCounter);
+    System.out.println("Number of edges: intraprocedural " + intraprocEdgeCounter + ", interprocedural " + interprocEdgeCounter
+        + " total " + (intraprocEdgeCounter + interprocEdgeCounter));
 
     return new SDGSupergraphLightweight(successors, predecessors, procEntries, procExits, stmtsToCallSites, callStmtsForSite,
         retStmtsForSite);

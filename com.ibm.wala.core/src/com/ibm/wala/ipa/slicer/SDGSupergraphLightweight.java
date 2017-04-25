@@ -8,6 +8,7 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.Graph;
 import com.ibm.wala.util.intset.IntSet;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +70,11 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   }
 
   @Override
+  public int getNumberOfNodes() {
+    return successors.keySet().size();
+  }
+
+  @Override
   public boolean containsNode(Long n) {
     return successors.containsKey(n);
   }
@@ -127,77 +133,112 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
   @Override
   public Iterator<? extends Long> getCalledNodes(Long call) {
-    // TODO
-    // Can be computed from the Statement.Kind and successors of call, see
-    // SDGSupergraph.getCalledNodes()
+    int kind = getKind(call);
+    if (kind == Statement.Kind.NORMAL.ordinal()) {
+      Set<Long> result = new HashSet<Long>();
+      Iterator<Long> succIter = getSuccNodes(call);
+      while (succIter.hasNext()) {
+        Long succ = succIter.next();
+        if (isEntry(succ)) {
+          result.add(succ);
+        }
+      }
+      return result.iterator();
+    } else if (kind == Statement.Kind.PARAM_CALLER.ordinal() || kind == Statement.Kind.HEAP_PARAM_CALLER.ordinal()) {
+      return getSuccNodes(call);
+    }
+    Assertions.UNREACHABLE(Statement.Kind.values()[kind]);
     return null;
   }
 
   @Override
   public int getLocalBlockNumber(Long n) {
-    // TODO
-    return 0;
+    return (int) ((n >> 5) & 1073741823); // 2^30-1, i.e. a string of 30 1's
   }
 
   @Override
   public Integer getProcOf(Long n) {
-    // TODO
-    return null;
+    return (int) ((n >> 35) & 536870911); // 2^29-1 i.e. a string of 29 1's
   }
 
   @Override
   public boolean isCall(Long n) {
-    // TODO
-    return false;
+    return (n & 1) == 1;
+  }
+
+  /**
+   * Extract the Statement.Kind back from the statement encoding as a Long
+   */
+  private int getKind(Long stmt) {
+    return (int) ((stmt & 30) >> 1);
   }
 
   @Override
   public boolean isReturn(Long n) {
-    // TODO
-    return false;
+    int kind = getKind(n);
+    return (kind == Statement.Kind.EXC_RET_CALLER.ordinal() || kind == Statement.Kind.HEAP_RET_CALLER.ordinal()
+        || kind == Statement.Kind.NORMAL_RET_CALLER.ordinal());
   }
 
   @Override
   public boolean isEntry(Long n) {
-    // TODO
-    return false;
+    int kind = getKind(n);
+    return (kind == Statement.Kind.PARAM_CALLEE.ordinal() || kind == Statement.Kind.HEAP_PARAM_CALLEE.ordinal()
+        || kind == Statement.Kind.METHOD_ENTRY.ordinal());
   }
 
   @Override
   public boolean isExit(Long n) {
-    // TODO
-    return false;
+    int kind = getKind(n);
+    return (kind == Statement.Kind.EXC_RET_CALLEE.ordinal() || kind == Statement.Kind.HEAP_RET_CALLEE.ordinal()
+        || kind == Statement.Kind.NORMAL_RET_CALLEE.ordinal() || kind == Statement.Kind.METHOD_EXIT.ordinal());
   }
 
+  /**
+   * TODO note that this does not actually recover the last five bits, so the
+   * Long returned is not the same representation of the Statement as used in
+   * the rest of the algorithm. It is not clear that those five bits are needed,
+   * however. If they are needed, we can retrieve them by looping over the
+   * keySet() of successors as in {@link #getNode(int)}.
+   * 
+   * The only caller is TabulationSolver$Result.getSupergraphNodesReached(),
+   * which retrieves the results after slicing is complete.
+   */
   @Override
   public Long getLocalBlock(Integer procedure, int i) {
-    /*
-     * TODO we don't know the last 4 bits. We could iterate over all keys in the
-     * successors map and see if it matches, but there may be a better
-     * workaround: change the return type of the only caller, which is
-     * TabulationSolver$Result.getSupergraphNodesReached(). Then getLocalBlock
-     * should not need to be invoked at all.
-     */
-    return null;
+    return ((long) procedure << 35) | ((long) i << 5);
   }
 
-  /*
-   * TODO the next two methods don't need to be implemented here, but require
-   * changes to the CallFlowEdges data structure. CallFlowEdges needs to be
-   * indexed by Longs and not by Integers. Corresponding changes are needed in
-   * TabulationSolver when these methods are invoked.
+  /**
+   * TODO For now we pack the pdgId and localStmtId into a single integer,
+   * giving them 16 bits each. This gives a max limit of 2^16 for both the
+   * number of pdgs and the number of nodes inside a PDG.
+   * 
+   * The cleaner way would be to change the return type of getNumber to long,
+   * and the parameter type of getNode to long. However, this would require
+   * making changes to the CallFlowEdges data structure. CallFlowEdges would
+   * need to be indexed by Longs and not by Integers. Corresponding changes are
+   * needed in TabulationSolver when these methods are invoked.
    */
-
   @Override
-  public int getNumber(Long N) {
-    Assertions.UNREACHABLE();
-    return 0;
+  public int getNumber(Long statement) {
+    int localStmtId = getLocalBlockNumber(statement);
+    int pdgId = getProcOf(statement);
+    return (pdgId << 16) | localStmtId;
   }
 
   @Override
   public Long getNode(int number) {
-    Assertions.UNREACHABLE();
-    return null;
+    int pdgId = number >> 16;
+    int localStmtId = number & 65535; // 2^16 - 1 i.e. a string with 16 1's.
+    Long packed = getLocalBlock(pdgId, localStmtId);
+    for (Long key : successors.keySet()) {
+      System.out.println("key " + Long.toBinaryString(key));
+      if ((key >> 5) == (packed >> 5)) {
+        return key;
+      }
+    }
+    throw new IllegalArgumentException("No node found for number " + number);
   }
 
   /**
@@ -255,12 +296,6 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   @Override
   public void addNode(Long n) {
     Assertions.UNREACHABLE();
-  }
-
-  @Override
-  public int getNumberOfNodes() {
-    Assertions.UNREACHABLE();
-    return 0;
   }
 
   @Override
