@@ -14,8 +14,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
@@ -33,7 +37,6 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.collections.CompoundIterator;
 import com.ibm.wala.util.collections.EmptyIterator;
-import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.Iterator2Collection;
 import com.ibm.wala.util.collections.IteratorUtil;
@@ -85,7 +88,13 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
   /**
    * keeps track of PDG for each call graph node
    */
-  private final Map<CGNode, PDG<T>> pdgMap = HashMapFactory.make();
+  private LoadingCache<CGNode, PDG<T>> pdgMap;
+
+  /**
+   * How many PDGs to cache by default (all are cached if eagerConstruction() is
+   * ever called)
+   */
+  private final static int MAX_PDGS_TO_CACHE = 1000;
 
   /**
    * governs data dependence edges in the graph
@@ -133,8 +142,8 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
     this(cg, pa, modRef, dOptions, cOptions, null);
   }
 
-  public SDG(CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions, ControlDependenceOptions cOptions,
-      HeapExclusions heapExclude) throws IllegalArgumentException {
+  public SDG(CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
+      ControlDependenceOptions cOptions, HeapExclusions heapExclude) throws IllegalArgumentException {
     super();
     if (dOptions == null) {
       throw new IllegalArgumentException("dOptions must not be null");
@@ -147,6 +156,13 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
     this.dOptions = dOptions;
     this.cOptions = cOptions;
     this.heapExclude = heapExclude;
+
+    pdgMap = CacheBuilder.newBuilder().maximumSize(MAX_PDGS_TO_CACHE).build(new CacheLoader<CGNode, PDG<T>>() {
+      @Override
+      public PDG<T> load(CGNode node) {
+        return createPDG(node);
+      }
+    });
   }
 
   /**
@@ -168,12 +184,21 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
     if (DEBUG_LAZY) {
       Assertions.UNREACHABLE();
     }
-    // Assertions.UNREACHABLE();
+    // change pdgMap so no eviction is ever performed, presumably we want this
+    // if calling eagerConstruction();
+    pdgMap = CacheBuilder.newBuilder().build(new CacheLoader<CGNode, PDG<T>>() {
+      @Override
+      public PDG<T> load(CGNode node) {
+        return createPDG(node);
+      }
+    });
     if (!eagerComputed) {
       eagerComputed = true;
       computeAllPDGs();
-      for (PDG pdg : pdgMap.values()) {
-        addPDGStatementNodes(pdg.getCallGraphNode());
+      for (PDG<T> pdg : pdgMap.asMap().values()) {
+        if (pdg != null) {
+          addPDGStatementNodes(pdg.getCallGraphNode());
+        }
       }
     }
   }
@@ -796,18 +821,17 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
     return nodeMgr;
   }
 
+  public PDG<T> createPDG(CGNode node) {
+    return new PDG<T>(node, pa, mod, ref, dOptions, cOptions, heapExclude, cg, modRef);
+  }
+
   @Override
   public PDG<T> getPDG(CGNode node) {
-    PDG<T> result = pdgMap.get(node);
-    if (result == null) {
-      result = new PDG<T>(node, pa, mod, ref, dOptions, cOptions, heapExclude, cg, modRef);
-      pdgMap.put(node, result);
-      // Let's not eagerly add nodes, shall we?
-      // for (Iterator<? extends Statement> it = result.iterator(); it.hasNext();) {
-      // nodeMgr.addNode(it.next());
-      // }
+    try {
+      return pdgMap.get(node);
+    } catch (ExecutionException e) {
+      throw new IllegalArgumentException("No PDG found for node " + node.toString());
     }
-    return result;
   }
 
   @Override
