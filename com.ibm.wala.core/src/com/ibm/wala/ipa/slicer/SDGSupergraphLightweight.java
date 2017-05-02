@@ -8,6 +8,7 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.Graph;
 import com.ibm.wala.util.intset.IntSet;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -92,12 +93,20 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
   @Override
   public Iterator<Long> getPredNodes(Long n) {
-    return predecessors.get(n).iterator();
+    List<Long> preds = predecessors.get(n);
+    if (preds == null) {
+      return Collections.emptyIterator();
+    }
+    return preds.iterator();
   }
 
   @Override
   public Iterator<Long> getSuccNodes(Long n) {
-    return successors.get(n).iterator();
+    List<Long> succs = successors.get(n);
+    if (succs == null) {
+      return Collections.emptyIterator();
+    }
+    return succs.iterator();
   }
 
   @Override
