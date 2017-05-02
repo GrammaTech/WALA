@@ -106,7 +106,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     receiverInfo = new HashMap<Long, Integer>();
     invokeInstructionParams = new HashMap<Long, List<Integer>>();
     paramValueNumbers = new HashMap<Long, Integer>();
-    
+
     long startTime = System.currentTimeMillis();
 
     parseControlAndDataDeps(parser);
@@ -429,15 +429,17 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
       if (getKind(stmt) == Statement.Kind.PARAM_CALLEE.ordinal()) {
         if (dOptions.isTerminateAtCast()) {
           Integer receiver = receiverInfo.get(callInstruction);
-          if (receiver != null && receiver.equals(paramValueNumbers.get(call)))
+          if (receiver != null && receiver.equals(paramValueNumbers.get(call))) {
             continue;
-          if (uninfForReflection)
+          }
+          if (uninfForReflection) {
             continue;
+          }
         }
         List<Integer> callerParams = invokeInstructionParams.get(callInstruction);
         for (int i = 0; i < callerParams.size(); i++) {
-          if (callerParams.get(i) == paramValueNumbers.get(call)) {
-            if (paramValueNumbers.get(stmt) == i + 1) {
+          if (callerParams.get(i).intValue() == paramValueNumbers.get(call).intValue()) {
+            if (paramValueNumbers.get(stmt).intValue() == i + 1) {
               addEdge(call, stmt);
             }
           }
