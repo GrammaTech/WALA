@@ -36,6 +36,9 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   private Table<Integer, Integer, Set<Long>> callStmtsForSite;
   private Table<Integer, Integer, Set<Long>> retStmtsForSite;
   private Map<Long, Integer> stmtsToCallSites;
+  private Map<Long, Integer> locationHashCodes;
+  private Map<Long, Integer> locationToStringHashCodes;
+  private Table<Integer, Integer, Long> localBlockMap;
 
   // internal data structures
   private ControlDependenceOptions cOptions;
@@ -46,17 +49,12 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   private Table<Integer, Integer, Set<Integer>> callTargets;
   // pdgId -> call site -> id of statement with call instruction
   private Table<Integer, Integer, Long> callInstructions;
-
   // id of statement with call instruction that is a dispatch -> receiver
   private Map<Long, Integer> receiverInfo;
   // id of statement with call instruction -> set of params
   private Map<Long, List<Integer>> invokeInstructionParams;
   // id of statement that is a PARAM_CALLER or CALLEE -> value number
   private Map<Long, Integer> paramValueNumbers;
-
-  // maps used to compare locations for HeapStatements
-  private Map<Long, Integer> locationHashCodes;
-  private Map<Long, Integer> locationToStringHashCodes;
 
   // relevant groups of statement kinds
   static final Set<Integer> entryStmtTypes = Sets.newHashSet(Statement.Kind.METHOD_ENTRY.ordinal(),
@@ -99,15 +97,16 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     callStmtsForSite = HashBasedTable.create();
     retStmtsForSite = HashBasedTable.create();
     stmtsToCallSites = new HashMap<Long, Integer>();
+    locationHashCodes = new HashMap<Long, Integer>();
+    locationToStringHashCodes = new HashMap<Long, Integer>();
+    localBlockMap = HashBasedTable.create();
     callTargets = HashBasedTable.create();
     cgNodesUninfForReflection = new HashSet<Integer>();
     callInstructions = HashBasedTable.create();
     receiverInfo = new HashMap<Long, Integer>();
     invokeInstructionParams = new HashMap<Long, List<Integer>>();
     paramValueNumbers = new HashMap<Long, Integer>();
-    locationHashCodes = new HashMap<Long, Integer>();
-    locationToStringHashCodes = new HashMap<Long, Integer>();
-
+    
     long startTime = System.currentTimeMillis();
 
     parseControlAndDataDeps(parser);
@@ -127,7 +126,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         + " total " + (intraprocEdgeCounter + interprocEdgeCounter));
 
     return new SDGSupergraphLightweight(successors, predecessors, procEntries, procExits, stmtsToCallSites, callStmtsForSite,
-        retStmtsForSite);
+        retStmtsForSite, locationHashCodes, locationToStringHashCodes, localBlockMap);
   }
 
   private void parseControlAndDataDeps(JsonParser parser) throws IOException {
@@ -211,6 +210,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     Long longId = generateLongId(pdgId, localId, stmtType, isCall);
     int stmtKind = getKind(longId);
     statementIdMap.put(localId, longId);
+    localBlockMap.put(pdgId, localId, longId);
 
     // now update data structures with info about this statement
     if (entryStmtTypes.contains(stmtKind)) {

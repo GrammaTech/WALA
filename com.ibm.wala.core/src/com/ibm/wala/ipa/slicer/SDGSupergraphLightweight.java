@@ -52,9 +52,17 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   private final Table<Integer, Integer, Set<Long>> callStmtsForSite;
   private final Table<Integer, Integer, Set<Long>> retStmtsForSite;
 
+  // maps used to compare locations for HeapStatements
+  private Map<Long, Integer> locationHashCodes;
+  private Map<Long, Integer> locationToStringHashCodes;
+  // pdg ID -> local ID in PDG -> full LongID TODO maybe refactor
+  private Table<Integer, Integer, Long> localBlockMap;
+
   public SDGSupergraphLightweight(Map<Long, List<Long>> successors, Map<Long, List<Long>> predecessors,
       Map<Integer, Long[]> procedureEntries, Map<Integer, Long[]> procedureExits, Map<Long, Integer> stmtsToCallIndexes,
-      Table<Integer, Integer, Set<Long>> callStatementsForSite, Table<Integer, Integer, Set<Long>> returnStatementsForSite) {
+      Table<Integer, Integer, Set<Long>> callStatementsForSite, Table<Integer, Integer, Set<Long>> returnStatementsForSite,
+      Map<Long, Integer> locationHashCodes, Map<Long, Integer> locationToStringHashCodes,
+      Table<Integer, Integer, Long> localBlockMap) {
     this.successors = successors;
     this.predecessors = predecessors;
     this.procEntries = procedureEntries;
@@ -62,6 +70,9 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     this.stmtsToCallSites = stmtsToCallIndexes;
     this.callStmtsForSite = callStatementsForSite;
     this.retStmtsForSite = returnStatementsForSite;
+    this.locationHashCodes = locationHashCodes;
+    this.locationToStringHashCodes = locationToStringHashCodes;
+    this.localBlockMap = localBlockMap;
   }
 
   @Override
@@ -151,6 +162,29 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return null;
   }
 
+  public Long getMethodEntryNodeForStatement(Long stmt) {
+    for (Long candidate : procEntries.get(getProcOf(stmt))) {
+      if (getKind(candidate) == Statement.Kind.METHOD_ENTRY.ordinal()) {
+        return candidate;
+      }
+    }
+    throw new IllegalArgumentException("No method entry found for statement " + stmt);
+  }
+
+  public Long getMethodExitNodeForStatement(Long stmt) {
+    for (Long candidate : procExits.get(getProcOf(stmt))) {
+      if (getKind(candidate) == Statement.Kind.METHOD_EXIT.ordinal()) {
+        return candidate;
+      }
+    }
+    throw new IllegalArgumentException("No method exit found for statement " + stmt);
+  }
+
+  public boolean haveSameLocation(Long stmt1, Long stmt2) {
+    return locationHashCodes.get(stmt1).equals(locationHashCodes.get(stmt2))
+        && locationToStringHashCodes.get(stmt1).equals(locationToStringHashCodes.get(stmt2));
+  }
+
   @Override
   public int getLocalBlockNumber(Long n) {
     return (int) ((n >> 5) & 1073741823); // 2^30-1, i.e. a string of 30 1's
@@ -194,19 +228,9 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
         || kind == Statement.Kind.NORMAL_RET_CALLEE.ordinal() || kind == Statement.Kind.METHOD_EXIT.ordinal());
   }
 
-  /**
-   * TODO note that this does not actually recover the last five bits, so the
-   * Long returned is not the same representation of the Statement as used in
-   * the rest of the algorithm. It is not clear that those five bits are needed,
-   * however. If they are needed, we can retrieve them by looping over the
-   * keySet() of successors as in {@link #getNode(int)}.
-   * 
-   * The only caller is TabulationSolver$Result.getSupergraphNodesReached(),
-   * which retrieves the results after slicing is complete.
-   */
   @Override
   public Long getLocalBlock(Integer procedure, int i) {
-    return ((long) procedure << 35) | ((long) i << 5);
+    return localBlockMap.get(procedure, i);
   }
 
   /**
@@ -231,14 +255,7 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   public Long getNode(int number) {
     int pdgId = number >> 16;
     int localStmtId = number & 65535; // 2^16 - 1 i.e. a string with 16 1's.
-    Long packed = getLocalBlock(pdgId, localStmtId);
-    for (Long key : successors.keySet()) {
-      System.out.println("key " + Long.toBinaryString(key));
-      if ((key >> 5) == (packed >> 5)) {
-        return key;
-      }
-    }
-    throw new IllegalArgumentException("No node found for number " + number);
+    return getLocalBlock(pdgId, localStmtId);
   }
 
   /**
