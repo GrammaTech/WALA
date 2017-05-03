@@ -70,6 +70,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
       Statement.Kind.HEAP_PARAM_CALLER.ordinal(), Statement.Kind.HEAP_RET_CALLEE.ordinal(),
       Statement.Kind.HEAP_RET_CALLER.ordinal());
 
+  public final static boolean VERBOSE = false;
   int interprocEdgeCounter; // for diagnostics
 
   protected SDGSupergraphLightweightDeserializer(Class<SDGSupergraphLightweight> t) {
@@ -112,18 +113,22 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     parseControlAndDataDeps(parser);
     parsePDGs(parser);
     int intraprocEdgeCounter = 0;
-    for (long s : successors.keySet()) {
-      intraprocEdgeCounter += successors.get(s).size();
+    if (VERBOSE) { // avoid traversal if don't want diagnostics
+      for (long s : successors.keySet()) {
+        intraprocEdgeCounter += successors.get(s).size();
+      }
     }
     interprocEdgeCounter = 0;
     parseCallTargetInfo(parser);
     populateInterproceduralEdges();
 
     long endTime = System.currentTimeMillis();
-    System.out.println("Time to deserialize was " + (endTime - startTime) / 1000 + " seconds.");
-    System.out.println("Number of nodes: " + successors.keySet().size());
-    System.out.println("Number of edges: intraprocedural " + intraprocEdgeCounter + ", interprocedural " + interprocEdgeCounter
-        + " total " + (intraprocEdgeCounter + interprocEdgeCounter));
+    if (VERBOSE) {
+      System.out.println("Time to deserialize was " + (endTime - startTime) / 1000 + " seconds.");
+      System.out.println("Number of nodes: " + successors.keySet().size());
+      System.out.println("Number of edges: intraprocedural " + intraprocEdgeCounter + ", interprocedural " + interprocEdgeCounter
+          + " total " + (intraprocEdgeCounter + interprocEdgeCounter));
+    }
 
     return new SDGSupergraphLightweight(successors, predecessors, procEntries, procExits, stmtsToCallSites, callStmtsForSite,
         retStmtsForSite, locationHashCodes, locationToStringHashCodes, localBlockMap);
