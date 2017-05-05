@@ -33,11 +33,9 @@ import java.util.Set;
 @JsonDeserialize(using = com.ibm.wala.ipa.slicer.json.SDGSupergraphLightweightDeserializer.class)
 public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
-  /*
-   * In successors we assume every node is listed as a key even if has no
-   * successors/ In predecessors we make no such assumption to avoid wasting
-   * space.
-   */
+  // graph structure
+  // "b succ of a" does not necessarily imply "a pred of b" or vice versa
+  // this lack of implication is also true in standard WALA SDGs
   private final Map<Long, List<Long>> successors;
   private final Map<Long, List<Long>> predecessors;
 
@@ -83,7 +81,7 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
   @Override
   public int getNumberOfNodes() {
-    return successors.keySet().size();
+    return localBlockMap.cellSet().size();
   }
 
   @Override

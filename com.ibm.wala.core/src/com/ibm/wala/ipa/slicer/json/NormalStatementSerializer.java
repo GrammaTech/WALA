@@ -42,16 +42,6 @@ public class NormalStatementSerializer extends StdSerializer<NormalStatement> {
     if (isAbstractInvokeInstruction) {
       SSAAbstractInvokeInstruction call = (SSAAbstractInvokeInstruction) instruction;
       jsonGenerator.writeNumberField("callSite", call.getProgramCounter());
-      jsonGenerator.writeBooleanField("isDispatch", call.isDispatch());
-      if (call.isDispatch()) {
-        jsonGenerator.writeNumberField("receiver", call.getReceiver());
-      }
-      jsonGenerator.writeFieldName("parameters");
-      jsonGenerator.writeStartArray();
-      for (int i = 0; i < call.getNumberOfParameters(); i++) {
-        jsonGenerator.writeNumber(call.getUse(i));
-      }
-      jsonGenerator.writeEndArray();
     }
   }
 }

@@ -3,20 +3,23 @@ package com.ibm.wala.ipa.slicer.json;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
+import com.ibm.wala.ipa.slicer.PDG;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.Statement;
+import com.ibm.wala.util.collections.Iterator2Collection;
+import com.ibm.wala.util.graph.traverse.Topological;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
- * Serializes an SDG to JSON. Edges between nodes in different PDGs are not
- * explicitly materialized and stored. Rather, we store enough information to
- * allow such edges to be reconstituted on demand using the logic in
- * {@link SDG#hasEdge(Object, Object)}.
+ * Serializes an SDG to JSON. All edges are explicitly materialized and stored.
+ * For edge serialization, nodes are encoded as [ i, j ] where i is the id of
+ * the PDG the node belongs to and j is its local id within the PDG.
  *
  */
 public class SDGSerializer extends StdSerializer<SDG<? extends InstanceKey>> {
@@ -34,43 +37,60 @@ public class SDGSerializer extends StdSerializer<SDG<? extends InstanceKey>> {
       throws IOException {
     jsonGenerator.writeStartObject();
     jsonGenerator.writeStringField("controlDeps", sdg.getCOptions().toString());
-    jsonGenerator.writeStringField("dataDeps", sdg.getDOptions().toString());
-
-    // write the PDGs
+    // write the PDGs - nodes only will be serialized
     CallGraph cg = sdg.getCallGraph();
     jsonGenerator.writeFieldName("pdgs");
     jsonGenerator.writeStartArray();
     for (CGNode cgNode : cg) {
       jsonGenerator.writeStartObject();
-      jsonGenerator.writeNumberField("nodeId", cg.getNumber(cgNode));
+      jsonGenerator.writeNumberField("cgNodeId", cg.getNumber(cgNode));
       jsonGenerator.writeObjectField("pdg", sdg.getPDG(cgNode));
       jsonGenerator.writeEndObject();
     }
     jsonGenerator.writeEndArray();
-
-    // write info about call targets
-    jsonGenerator.writeFieldName("callTargetInfo");
+    // write all edges
+    jsonGenerator.writeFieldName("edges");
     jsonGenerator.writeStartArray();
-    for (CGNode cgNode : cg) {
-      jsonGenerator.writeStartObject();
-      jsonGenerator.writeNumberField("nodeId", cg.getNumber(cgNode));
-      jsonGenerator.writeFieldName("callTargets");
-      jsonGenerator.writeStartArray();
-      Iterator<CallSiteReference> callSiteIterator = cgNode.iterateCallSites();
-      while (callSiteIterator.hasNext()) {
-        jsonGenerator.writeStartObject();
-        CallSiteReference callSite = callSiteIterator.next();
-        jsonGenerator.writeNumberField("callSite", callSite.getProgramCounter());
-        jsonGenerator.writeFieldName("targetNodeIds");
-        jsonGenerator.writeStartArray();
-        for (CGNode targetNode : cg.getPossibleTargets(cgNode, callSite)) {
-          jsonGenerator.writeNumber(cg.getNumber(targetNode));
+    for (CGNode cgNode : Topological.makeTopologicalIter(cg)) {
+      PDG<? extends InstanceKey> srcPdg = sdg.getPDG(cgNode);
+      Iterator<Statement> pdgNodeIter = srcPdg.iterator();
+      while (pdgNodeIter.hasNext()) {
+        Statement s = pdgNodeIter.next();
+        Set<Statement> interprocSuccessors = Iterator2Collection.toSet(sdg.getSuccNodes(s));
+        Set<Statement> interprocPredecessors = Iterator2Collection.toSet(sdg.getPredNodes(s));
+        if (!interprocSuccessors.isEmpty() || !interprocPredecessors.isEmpty()) {
+          jsonGenerator.writeStartObject();
+          // source node pdgId and localId
+          jsonGenerator.writeFieldName("node");
+          jsonGenerator.writeStartArray();
+          jsonGenerator.writeNumber(cg.getNumber(cgNode));
+          jsonGenerator.writeNumber(sdg.getPDG(cgNode).getNumber(s));
+          jsonGenerator.writeEndArray();
+          if (!interprocSuccessors.isEmpty()) {
+            jsonGenerator.writeFieldName("successors");
+            jsonGenerator.writeStartArray();
+            for (Statement succ : interprocSuccessors) {
+              jsonGenerator.writeStartArray();
+              jsonGenerator.writeNumber(cg.getNumber(succ.getNode()));
+              jsonGenerator.writeNumber(sdg.getPDG(succ.getNode()).getNumber(succ));
+              jsonGenerator.writeEndArray();
+            }
+            jsonGenerator.writeEndArray();
+          }
+          if (!interprocPredecessors.isEmpty()) {
+            jsonGenerator.writeFieldName("predecessors");
+            jsonGenerator.writeStartArray();
+            for (Statement pred : interprocPredecessors) {
+              jsonGenerator.writeStartArray();
+              jsonGenerator.writeNumber(cg.getNumber(pred.getNode()));
+              jsonGenerator.writeNumber(sdg.getPDG(pred.getNode()).getNumber(pred));
+              jsonGenerator.writeEndArray();
+            }
+            jsonGenerator.writeEndArray();
+          }
+          jsonGenerator.writeEndObject();
         }
-        jsonGenerator.writeEndArray();
-        jsonGenerator.writeEndObject();
       }
-      jsonGenerator.writeEndArray();
-      jsonGenerator.writeEndObject();
     }
     jsonGenerator.writeEndArray();
     jsonGenerator.writeEndObject();

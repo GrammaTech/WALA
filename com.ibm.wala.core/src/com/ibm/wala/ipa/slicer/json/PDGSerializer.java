@@ -17,9 +17,6 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.slicer.PDG;
 import com.ibm.wala.ipa.slicer.Statement;
-import com.ibm.wala.types.MethodReference;
-import com.ibm.wala.types.TypeReference;
-
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -44,7 +41,6 @@ public class PDGSerializer extends StdSerializer<PDG<? extends InstanceKey>> {
     CGNode cgNode = pdg.getCallGraphNode();
     jsonGenerator.writeStringField("method", cgNode.getMethod().getSignature());
     jsonGenerator.writeStringField("context", cgNode.getContext().toString());
-    jsonGenerator.writeBooleanField("isUninformativeForReflection", isUninformativeForReflection(cgNode));
     // write nodes
     jsonGenerator.writeFieldName("nodes");
     jsonGenerator.writeStartArray();
@@ -58,42 +54,6 @@ public class PDGSerializer extends StdSerializer<PDG<? extends InstanceKey>> {
       jsonGenerator.writeEndObject();
     }
     jsonGenerator.writeEndArray();
-    // write edges
-    jsonGenerator.writeFieldName("edges");
-    jsonGenerator.writeStartArray();
-    it = pdg.iterator();
-    while (it.hasNext()) {
-      Statement src = it.next();
-      int srcNum = pdg.getNumber(src);
-      jsonGenerator.writeStartObject();
-      jsonGenerator.writeNumberField("node", srcNum);
-      jsonGenerator.writeFieldName("successors");
-      jsonGenerator.writeStartArray();
-      Iterator<Statement> succIterator = pdg.getSuccNodes(src);
-      while (succIterator.hasNext()) {
-        jsonGenerator.writeNumber(pdg.getNumber(succIterator.next()));
-      }
-      jsonGenerator.writeEndArray();
-      jsonGenerator.writeEndObject();
-    }
-    jsonGenerator.writeEndArray();
     jsonGenerator.writeEndObject();
-  }
-
-  /**
-   * Should we cut off flow into node t when processing reflection? Copied from
-   * {@link com.ibm.wala.ipa.slicer.SDG}.
-   */
-  private boolean isUninformativeForReflection(CGNode t) {
-    if (t.getMethod().getDeclaringClass().getReference().equals(TypeReference.JavaLangReflectMethod)) {
-      return true;
-    }
-    if (t.getMethod().getDeclaringClass().getReference().equals(TypeReference.JavaLangReflectConstructor)) {
-      return true;
-    }
-    if (t.getMethod().getSelector().equals(MethodReference.equalsSelector)) {
-      return true;
-    }
-    return false;
   }
 }
