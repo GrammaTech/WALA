@@ -275,6 +275,7 @@ public class SDGSupergraph implements ISupergraph<Statement, PDG<? extends Insta
     case HEAP_RET_CALLEE:
     case NORMAL_RET_CALLEE:
     case CATCH:
+    case METHOD_EXIT:
       return false;
     default:
       Assertions.UNREACHABLE(n.toString());
@@ -327,6 +328,7 @@ public class SDGSupergraph implements ISupergraph<Statement, PDG<? extends Insta
     case PHI:
     case PI:
     case METHOD_ENTRY:
+    case METHOD_EXIT:
     case CATCH:
       return false;
     default:
