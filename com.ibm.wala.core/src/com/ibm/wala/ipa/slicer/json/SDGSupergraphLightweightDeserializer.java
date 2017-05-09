@@ -35,21 +35,21 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   private Map<Long, Integer> stmtsToCallSites;
   private Map<Long, Integer> locationHashCodes;
   private Map<Long, Integer> locationToStringHashCodes;
-  private Table<Integer, Integer, Long> localBlockMap; // TODO refactor
+  private Table<Integer, Integer, Byte> kindInfoMap;
 
   private ControlDependenceOptions cOptions;
 
   // relevant groups of statement kinds
-  static final Set<Integer> entryStmtTypes = Sets.newHashSet(Statement.Kind.METHOD_ENTRY.ordinal(),
+  static final Set<Integer> ENTRY_STMT_TYPES = Sets.newHashSet(Statement.Kind.METHOD_ENTRY.ordinal(),
       Statement.Kind.PARAM_CALLEE.ordinal(), Statement.Kind.HEAP_PARAM_CALLEE.ordinal());
-  static final Set<Integer> exitStmtTypes = Sets.newHashSet(Statement.Kind.METHOD_EXIT.ordinal(),
+  static final Set<Integer> EXIT_STMT_TYPES = Sets.newHashSet(Statement.Kind.METHOD_EXIT.ordinal(),
       Statement.Kind.NORMAL_RET_CALLEE.ordinal(), Statement.Kind.HEAP_RET_CALLEE.ordinal(),
       Statement.Kind.EXC_RET_CALLEE.ordinal());
-  static final Set<Integer> callStmtTypes = Sets.newHashSet(Statement.Kind.NORMAL.ordinal(), Statement.Kind.PARAM_CALLER.ordinal(),
-      Statement.Kind.HEAP_PARAM_CALLER.ordinal());
-  static final Set<Integer> retStmtTypes = Sets.newHashSet(Statement.Kind.NORMAL_RET_CALLER.ordinal(),
+  static final Set<Integer> CALL_STMT_TYPES = Sets.newHashSet(Statement.Kind.NORMAL.ordinal(),
+      Statement.Kind.PARAM_CALLER.ordinal(), Statement.Kind.HEAP_PARAM_CALLER.ordinal());
+  static final Set<Integer> RET_STMT_TYPES = Sets.newHashSet(Statement.Kind.NORMAL_RET_CALLER.ordinal(),
       Statement.Kind.HEAP_RET_CALLER.ordinal(), Statement.Kind.EXC_RET_CALLER.ordinal());
-  static final Set<Integer> heapStmtTypes = Sets.newHashSet(Statement.Kind.HEAP_PARAM_CALLEE.ordinal(),
+  static final Set<Integer> HEAP_STMT_TYPES = Sets.newHashSet(Statement.Kind.HEAP_PARAM_CALLEE.ordinal(),
       Statement.Kind.HEAP_PARAM_CALLER.ordinal(), Statement.Kind.HEAP_RET_CALLEE.ordinal(),
       Statement.Kind.HEAP_RET_CALLER.ordinal());
 
@@ -82,7 +82,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     stmtsToCallSites = new HashMap<Long, Integer>();
     locationHashCodes = new HashMap<Long, Integer>();
     locationToStringHashCodes = new HashMap<Long, Integer>();
-    localBlockMap = HashBasedTable.create();
+    kindInfoMap = HashBasedTable.create();
 
     long startTime = System.currentTimeMillis();
 
@@ -94,11 +94,11 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
 
     if (VERBOSE) {
       System.out.println("Time to deserialize was " + (endTime - startTime) / 1000 + " seconds.");
-      System.out.println("Number of nodes: " + localBlockMap.cellSet().size());
+      System.out.println("Number of nodes: " + kindInfoMap.cellSet().size());
     }
 
     return new SDGSupergraphLightweight(successors, predecessors, procEntries, procExits, stmtsToCallSites, callStmtsForSite,
-        retStmtsForSite, locationHashCodes, locationToStringHashCodes, localBlockMap);
+        retStmtsForSite, locationHashCodes, locationToStringHashCodes, kindInfoMap);
   }
 
   private void parseControlDepOptions(JsonParser parser) throws IOException {
@@ -157,7 +157,9 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     String stmtType = stmt.get("statement").get("type").textValue();
     stmtType = stmtType.substring(stmtType.lastIndexOf(".") + 1);
     boolean isCall = false;
-    if (!cOptions.equals(ControlDependenceOptions.NONE) && stmtType.equals("NormalStatement")) {
+    if (stmtType.equals("ParamCaller") || stmtType.equals("HeapStatement$HeapParamCaller")) {
+      isCall = true;
+    } else if (!cOptions.equals(ControlDependenceOptions.NONE) && stmtType.equals("NormalStatement")) {
       JsonNode isAbstractInvoke = stmt.get("statement").get("isAbstractInvokeInstruction");
       if (isAbstractInvoke != null) {
         isCall = isAbstractInvoke.asBoolean();
@@ -165,12 +167,12 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     }
     Long longId = generateLongId(pdgId, localId, stmtType, isCall);
     int stmtKind = getKind(longId);
-    localBlockMap.put(pdgId, localId, longId);
-
     // now update data structures with info about this statement
-    if (entryStmtTypes.contains(stmtKind)) {
+    kindInfoMap.put(pdgId, localId, (byte) (stmtKind << 1 | (isCall ? 1 : 0)));
+
+    if (ENTRY_STMT_TYPES.contains(stmtKind)) {
       entries.add(longId);
-    } else if (exitStmtTypes.contains(stmtKind)) {
+    } else if (EXIT_STMT_TYPES.contains(stmtKind)) {
       exits.add(longId);
     }
 
@@ -179,14 +181,14 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
       int callSite = callSiteJsonNode.asInt();
       stmtsToCallSites.put(longId, callSite);
       // update maps
-      if (callStmtTypes.contains(stmtKind)) {
+      if (CALL_STMT_TYPES.contains(stmtKind)) {
         Set<Long> current = callStmtsForSite.get(pdgId, callSite);
         if (current == null) {
           current = new HashSet<Long>();
           callStmtsForSite.put(pdgId, callSite, current);
         }
         current.add(longId);
-      } else if (retStmtTypes.contains(stmtKind)) {
+      } else if (RET_STMT_TYPES.contains(stmtKind)) {
         Set<Long> current = retStmtsForSite.get(pdgId, callSite);
         if (current == null) {
           current = new HashSet<Long>();
@@ -195,7 +197,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         current.add(longId);
       }
     }
-    if (heapStmtTypes.contains(stmtKind)) {
+    if (HEAP_STMT_TYPES.contains(stmtKind)) {
       locationHashCodes.put(longId, stmt.get("statement").get("locationHashCode").asInt());
       locationToStringHashCodes.put(longId, stmt.get("statement").get("locationToStringHashCode").asInt());
     }
@@ -273,12 +275,12 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     parser.nextToken(); // start of edges array
     while (parser.nextToken() != JsonToken.END_ARRAY) {
       JsonNode jsonNode = parser.readValueAsTree();
-      Long src = localBlockMap.get(jsonNode.get("node").get(0).asInt(), jsonNode.get("node").get(1).asInt());
+      Long src = SDGSupergraphLightweight.getLocalBlock(kindInfoMap,jsonNode.get("node").get(0).asInt(), jsonNode.get("node").get(1).asInt());
       if (jsonNode.get("successors") != null) {
         Iterator<JsonNode> succIterator = jsonNode.get("successors").iterator();
         while (succIterator.hasNext()) {
           JsonNode succ = succIterator.next();
-          Long succId = localBlockMap.get(succ.get(0).asInt(), succ.get(1).asInt());
+          Long succId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap,succ.get(0).asInt(), succ.get(1).asInt());
           List<Long> currentSuccessors = MapUtil.findOrCreateList(successors, src);
           currentSuccessors.add(succId);
         }
@@ -287,7 +289,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         Iterator<JsonNode> predIterator = jsonNode.get("predecessors").iterator();
         while (predIterator.hasNext()) {
           JsonNode pred = predIterator.next();
-          Long predId = localBlockMap.get(pred.get(0).asInt(), pred.get(1).asInt());
+          Long predId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap,pred.get(0).asInt(), pred.get(1).asInt());
           List<Long> currentPredecessors = MapUtil.findOrCreateList(predecessors, src);
           currentPredecessors.add(predId);
         }

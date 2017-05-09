@@ -20,10 +20,10 @@ import java.util.Set;
  * Statement is represented by a Long, where the bits are allocated as follows,
  * indexing from the right:
  * 
- * bits 35-63 - 29 bits to encode the PDG id
+ * bits 35-63 - 29 bits to encode the pdgId (id of call graph node and PDG)
  * 
- * bits 5-34 - 30 bits to encode the id of the Statement within the respective
- * PDG
+ * bits 5-34 - 30 bits to encode the localId (id of the Statement within the
+ * respective PDG)
  * 
  * bits 1-4 - 4 bits encodes the Statement.Kind (16 options)
  * 
@@ -33,13 +33,14 @@ import java.util.Set;
 @JsonDeserialize(using = com.ibm.wala.ipa.slicer.json.SDGSupergraphLightweightDeserializer.class)
 public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
-  // graph structure
+  // graph edge info
   // "b succ of a" does not necessarily imply "a pred of b" or vice versa
   // this lack of implication is also true in standard WALA SDGs
+  // e.g. if code being analyzed uses Class.newInstance()
   private final Map<Long, List<Long>> successors;
   private final Map<Long, List<Long>> predecessors;
 
-  // map every procedure (PDG id) to the set of entry/exit nodes
+  // map every procedure (i.e., pdgId) to the set of entry/exit nodes
   // see SDGSupergraph.getEntriesForProcedure() and getExitsForProcedure()
   private final Map<Integer, Long[]> procEntries;
   private final Map<Integer, Long[]> procExits;
@@ -47,21 +48,22 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   // maps statement to call site if stmt has one
   private final Map<Long, Integer> stmtsToCallSites;
 
-  // pdg ID -> call site -> caller param and return statements
+  // pdgId -> call site -> caller param and return statements
   private final Table<Integer, Integer, Set<Long>> callStmtsForSite;
   private final Table<Integer, Integer, Set<Long>> retStmtsForSite;
 
   // maps used to compare locations for HeapStatements
   private Map<Long, Integer> locationHashCodes;
   private Map<Long, Integer> locationToStringHashCodes;
-  // pdg ID -> local ID in PDG -> full LongID TODO maybe refactor
-  private Table<Integer, Integer, Long> localBlockMap;
+
+  // pdgId -> localID -> last 5 bits of Long id encoding (Kind and isCall)
+  private Table<Integer, Integer, Byte> kindInfoMap;
 
   public SDGSupergraphLightweight(Map<Long, List<Long>> successors, Map<Long, List<Long>> predecessors,
       Map<Integer, Long[]> procedureEntries, Map<Integer, Long[]> procedureExits, Map<Long, Integer> stmtsToCallIndexes,
       Table<Integer, Integer, Set<Long>> callStatementsForSite, Table<Integer, Integer, Set<Long>> returnStatementsForSite,
       Map<Long, Integer> locationHashCodes, Map<Long, Integer> locationToStringHashCodes,
-      Table<Integer, Integer, Long> localBlockMap) {
+      Table<Integer, Integer, Byte> kindInfoMap) {
     this.successors = successors;
     this.predecessors = predecessors;
     this.procEntries = procedureEntries;
@@ -71,22 +73,22 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     this.retStmtsForSite = returnStatementsForSite;
     this.locationHashCodes = locationHashCodes;
     this.locationToStringHashCodes = locationToStringHashCodes;
-    this.localBlockMap = localBlockMap;
+    this.kindInfoMap = kindInfoMap;
   }
 
   @Override
-  public Iterator<Long> iterator() {
+  public Iterator<Long> iterator() { // TODO FIXME
     return successors.keySet().iterator();
   }
 
   @Override
   public int getNumberOfNodes() {
-    return localBlockMap.cellSet().size();
+    return kindInfoMap.cellSet().size();
   }
 
   @Override
   public boolean containsNode(Long n) {
-    return successors.containsKey(n);
+    return kindInfoMap.get(getProcOf(n), getLocalBlockNumber(n)) != null;
   }
 
   @Override
@@ -107,6 +109,13 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return succs.iterator();
   }
 
+  /**
+   * This relies on successor info so may theoretically lead to problems in
+   * corner cases where WALA's successor/predecessor relation is not symmetric.
+   * That is, it is possible that a is a predecessor of b but b is not a
+   * successor of a or vice versa, e.g. in cases involving reflection and
+   * Class.newInstance().
+   */
   @Override
   public boolean hasEdge(Long src, Long dst) {
     List<Long> srcSuccessors = successors.get(src);
@@ -192,6 +201,7 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
         && locationToStringHashCodes.get(stmt1).equals(locationToStringHashCodes.get(stmt2));
   }
 
+  // methods that extract info from stmt Long encoding
   @Override
   public int getLocalBlockNumber(Long n) {
     return (int) ((n >> 5) & 1073741823); // 2^30-1, i.e. a string of 30 1's
@@ -202,16 +212,14 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return (int) ((n >> 35) & 536870911); // 2^29-1 i.e. a string of 29 1's
   }
 
+  // not in ISupergraph, handy for testing
+  public int getKind(Long stmt) {
+    return (int) ((stmt & 30) >> 1);
+  }
+
   @Override
   public boolean isCall(Long n) {
     return (n & 1) == 1;
-  }
-
-  /**
-   * Extract the Statement.Kind back from the statement encoding as a Long
-   */
-  private int getKind(Long stmt) {
-    return (int) ((stmt & 30) >> 1);
   }
 
   @Override
@@ -236,8 +244,28 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   }
 
   @Override
-  public Long getLocalBlock(Integer procedure, int i) {
-    return localBlockMap.get(procedure, i);
+  public Long getLocalBlock(Integer pdgId, int localId) {
+    return getLocalBlock(kindInfoMap, pdgId, localId);
+  }
+
+  /**
+   * This static version of the above method exists because the same logic is
+   * useful during deserialization, so having it here avoids duplicating the
+   * logic in SDGSupergraphLightweightDeserializer.
+   * 
+   * @param map
+   *          map from pdgId -> localId -> Kind and isCall() i.e. last 5 bits of
+   *          Long encoding
+   * @param pdgId
+   * @param localId
+   * @return Long encoding of statement
+   */
+  public static Long getLocalBlock(Table<Integer, Integer, Byte> map, Integer pdgId, int localId) {
+    Byte kindInfo = map.get(pdgId, localId);
+    if (kindInfo == null) {
+      return null;
+    }
+    return (long) pdgId << 35 | (long) localId << 5 | kindInfo;
   }
 
   /**
