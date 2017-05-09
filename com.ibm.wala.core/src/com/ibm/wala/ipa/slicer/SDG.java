@@ -677,6 +677,7 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
       case HEAP_RET_CALLER:
       case METHOD_ENTRY:
       case METHOD_EXIT:
+      case CATCH:
         return getPDG(src.getNode()).hasEdge(src, dst);
       case EXC_RET_CALLEE: {
         if (dOptions.equals(DataDependenceOptions.NONE)) {
