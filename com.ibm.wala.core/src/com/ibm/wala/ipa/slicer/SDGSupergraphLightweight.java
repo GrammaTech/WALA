@@ -2,6 +2,7 @@ package com.ibm.wala.ipa.slicer;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 import com.ibm.wala.dataflow.IFDS.ISupergraph;
 import com.ibm.wala.util.collections.EmptyIterator;
 import com.ibm.wala.util.debug.Assertions;
@@ -56,7 +57,7 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   private Map<Long, Integer> locationHashCodes;
   private Map<Long, Integer> locationToStringHashCodes;
 
-  // pdgId -> localID -> last 5 bits of Long id encoding (Kind and isCall)
+  // pdgId -> localId -> last 5 bits of Long id encoding (Kind and isCall)
   private Table<Integer, Integer, Byte> kindInfoMap;
 
   public SDGSupergraphLightweight(Map<Long, List<Long>> successors, Map<Long, List<Long>> predecessors,
@@ -77,8 +78,8 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   }
 
   @Override
-  public Iterator<Long> iterator() { // TODO FIXME
-    return successors.keySet().iterator();
+  public Iterator<Long> iterator() {
+    return new NodeIterator(kindInfoMap);
   }
 
   @Override
@@ -396,5 +397,29 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   public Iterator<Long> iterateNodes(IntSet s) {
     Assertions.UNREACHABLE();
     return null;
+  }
+
+  /**
+   * Inner class to support the iterator() method in the parent. Wraps iterator
+   * over the cell set of kindInfoMap and returns appropriate Long node ids.
+   */
+  private class NodeIterator implements Iterator<Long> {
+
+    Iterator<Cell<Integer, Integer, Byte>> backingIterator;
+
+    NodeIterator(Table<Integer, Integer, Byte> table) {
+      this.backingIterator = table.cellSet().iterator();
+    }
+
+    @Override
+    public boolean hasNext() {
+      return backingIterator.hasNext();
+    }
+
+    @Override
+    public Long next() {
+      Cell<Integer, Integer, Byte> nextCell = backingIterator.next();
+      return (long) nextCell.getRowKey() << 35 | (long) nextCell.getColumnKey() << 5 | nextCell.getValue();
+    }
   }
 }
