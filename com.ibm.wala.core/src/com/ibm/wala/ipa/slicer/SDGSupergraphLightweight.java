@@ -188,29 +188,6 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return null;
   }
 
-  public Long getMethodEntryNodeForStatement(Long stmt) {
-    for (Long candidate : procEntries.get(getProcOf(stmt))) {
-      if (getKind(candidate) == Statement.Kind.METHOD_ENTRY.ordinal()) {
-        return candidate;
-      }
-    }
-    throw new IllegalArgumentException("No method entry found for statement " + stmt);
-  }
-
-  public Long getMethodExitNodeForStatement(Long stmt) {
-    for (Long candidate : procExits.get(getProcOf(stmt))) {
-      if (getKind(candidate) == Statement.Kind.METHOD_EXIT.ordinal()) {
-        return candidate;
-      }
-    }
-    throw new IllegalArgumentException("No method exit found for statement " + stmt);
-  }
-
-  public boolean haveSameLocation(Long stmt1, Long stmt2) {
-    return locationHashCodes.get(stmt1).equals(locationHashCodes.get(stmt2))
-        && locationToStringHashCodes.get(stmt1).equals(locationToStringHashCodes.get(stmt2));
-  }
-
   // methods that extract info from stmt Long encoding
   @Override
   public int getLocalBlockNumber(Long n) {
@@ -403,6 +380,32 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   public Iterator<Long> iterateNodes(IntSet s) {
     Assertions.UNREACHABLE();
     return null;
+  }
+
+  // methods not in the ISupergraph interface but needed to set up
+  // problem for slicing
+
+  public Long getMethodEntryNodeForStatement(Long stmt) {
+    for (Long candidate : procEntries.get(getProcOf(stmt))) {
+      if (getKind(candidate) == Statement.Kind.METHOD_ENTRY.ordinal()) {
+        return candidate;
+      }
+    }
+    throw new IllegalArgumentException("No method entry found for statement " + stmt);
+  }
+
+  public Long getMethodExitNodeForStatement(Long stmt) {
+    for (Long candidate : procExits.get(getProcOf(stmt))) {
+      if (getKind(candidate) == Statement.Kind.METHOD_EXIT.ordinal()) {
+        return candidate;
+      }
+    }
+    throw new IllegalArgumentException("No method exit found for statement " + stmt);
+  }
+
+  public boolean haveSameLocation(Long stmt1, Long stmt2) {
+    return locationHashCodes.get(stmt1).equals(locationHashCodes.get(stmt2))
+        && locationToStringHashCodes.get(stmt1).equals(locationToStringHashCodes.get(stmt2));
   }
 
   /**
