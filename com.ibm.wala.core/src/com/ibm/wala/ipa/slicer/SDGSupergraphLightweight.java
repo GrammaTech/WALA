@@ -10,6 +10,7 @@ import com.ibm.wala.util.graph.Graph;
 import com.ibm.wala.util.intset.IntSet;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -60,6 +61,11 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   // pdgId -> localId -> last 5 bits of Long id encoding (Kind and isCall)
   private Table<Integer, Integer, Byte> kindInfoMap;
 
+  // maps for integer node identifiers needed by tabulation algorithm
+  private Map<Integer, Long> intToNodeMap;
+  private Map<Long, Integer> nodeToIntMap;
+  private int maxCurrentId;
+
   public SDGSupergraphLightweight(Map<Long, List<Long>> successors, Map<Long, List<Long>> predecessors,
       Map<Integer, Long[]> procedureEntries, Map<Integer, Long[]> procedureExits, Map<Long, Integer> stmtsToCallIndexes,
       Table<Integer, Integer, Set<Long>> callStatementsForSite, Table<Integer, Integer, Set<Long>> returnStatementsForSite,
@@ -75,6 +81,9 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     this.locationHashCodes = locationHashCodes;
     this.locationToStringHashCodes = locationToStringHashCodes;
     this.kindInfoMap = kindInfoMap;
+    this.intToNodeMap = new HashMap<Integer, Long>();
+    this.nodeToIntMap = new HashMap<Long, Integer>();
+    this.maxCurrentId = -1;
   }
 
   @Override
@@ -269,29 +278,26 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return (long) pdgId << 35 | (long) localId << 5 | kindInfo;
   }
 
-  /**
-   * TODO For now we pack the pdgId and localStmtId into a single integer,
-   * giving them 16 bits each. This gives a max limit of 2^16 for both the
-   * number of pdgs and the number of nodes inside a PDG.
-   * 
-   * The cleaner way would be to change the return type of getNumber to long,
-   * and the parameter type of getNode to long. However, this would require
-   * making changes to the CallFlowEdges data structure. CallFlowEdges would
-   * need to be indexed by Longs and not by Integers. Corresponding changes are
-   * needed in TabulationSolver when these methods are invoked.
-   */
   @Override
   public int getNumber(Long statement) {
-    int localStmtId = getLocalBlockNumber(statement);
-    int pdgId = getProcOf(statement);
-    return (pdgId << 16) | localStmtId;
+    Integer valFromMap = nodeToIntMap.get(statement);
+    if (valFromMap != null) {
+      return valFromMap;
+    }
+    // not in map yet, generate new identifier
+    Integer newId = ++maxCurrentId;
+    nodeToIntMap.put(statement, newId);
+    intToNodeMap.put(newId, statement);
+    return newId;
   }
 
   @Override
   public Long getNode(int number) {
-    int pdgId = number >> 16;
-    int localStmtId = number & 65535; // 2^16 - 1 i.e. a string with 16 1's.
-    return getLocalBlock(pdgId, localStmtId);
+    Long result = intToNodeMap.get(number);
+    if (result == null) {
+      throw new IllegalArgumentException("No SDG node found for identifier " + number);
+    }
+    return result;
   }
 
   /**
