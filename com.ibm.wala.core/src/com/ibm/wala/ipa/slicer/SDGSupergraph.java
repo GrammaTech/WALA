@@ -12,10 +12,11 @@ package com.ibm.wala.ipa.slicer;
 
 import java.util.Iterator;
 
-import com.ibm.wala.dataflow.IFDS.ISupergraph;
+import com.ibm.wala.dataflow.IFDS.ISDGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
+import com.ibm.wala.ipa.slicer.Statement.Kind;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.collections.EmptyIterator;
@@ -27,7 +28,7 @@ import com.ibm.wala.util.intset.IntSet;
 /**
  * A wrapper around an SDG to make it look like a supergraph for tabulation.
  */
-public class SDGSupergraph implements ISupergraph<Statement, PDG<? extends InstanceKey>> {
+public class SDGSupergraph implements ISDGSupergraph<Statement, PDG<? extends InstanceKey>> {
 
   private final ISDG sdg;
 
@@ -460,6 +461,31 @@ public class SDGSupergraph implements ISupergraph<Statement, PDG<? extends Insta
   @Override
   public IntSet getSuccNodeNumbers(Statement node) {
     return sdg.getSuccNodeNumbers(node);
+  }
+
+  @Override
+  public Statement getMethodExitNodeForStatement(Statement s) {
+    return new MethodExitStatement(s.getNode());
+  }
+
+  @Override
+  public Statement getMethodEntryNodeForStatement(Statement s) {
+    return new MethodEntryStatement(s.getNode());
+  }
+
+  @Override
+  public Kind getKind(Statement s) {
+    return s.getKind();
+  }
+
+  @Override
+  public boolean haveSameLocation(Statement first, Statement second) {
+    if (!(first instanceof HeapStatement) || !(second instanceof HeapStatement)) {
+      throw new IllegalArgumentException("One or both args are not HeapStatements: " + first + "  " + second);
+    }
+    HeapStatement hf = (HeapStatement) first;
+    HeapStatement hs = (HeapStatement) second;
+    return hf.getLocation().equals(hs.getLocation());
   }
 
 }

@@ -12,6 +12,7 @@ package com.ibm.wala.dataflow.IFDS;
 
 import java.util.Iterator;
 
+import com.ibm.wala.ipa.slicer.Statement.Kind;
 import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.collections.FilterIterator;
 import com.ibm.wala.util.collections.Iterator2Collection;
@@ -25,7 +26,7 @@ import com.ibm.wala.util.intset.IntSet;
  * 
  * In this view, a return is treated like a call, and vice-versa. All normal edges are reversed.
  */
-public class BackwardsSupergraph<T, P> implements ISupergraph<T, P> {
+public class BackwardsSupergraph<T, P> implements ISDGSupergraph<T, P> {
 
   /**
    * DEBUG_LEVEL:
@@ -37,21 +38,21 @@ public class BackwardsSupergraph<T, P> implements ISupergraph<T, P> {
    */
   static final int DEBUG_LEVEL = 0;
 
-  private final ISupergraph<T, P> delegate;
+  private final ISDGSupergraph<T, P> delegate;
 
   private final ExitFilter exitFilter = new ExitFilter();
 
   /**
    * @param forwardGraph the graph to ``reverse''
    */
-  protected BackwardsSupergraph(ISupergraph<T, P> forwardGraph) {
+  protected BackwardsSupergraph(ISDGSupergraph<T, P> forwardGraph) {
     if (forwardGraph == null) {
       throw new IllegalArgumentException("null forwardGraph");
     }
     this.delegate = forwardGraph;
   }
 
-  public static <T, P> BackwardsSupergraph<T, P> make(ISupergraph<T, P> forwardGraph) {
+  public static <T, P> BackwardsSupergraph<T, P> make(ISDGSupergraph<T, P> forwardGraph) {
     return new BackwardsSupergraph<T, P>(forwardGraph);
   }
 
@@ -386,5 +387,25 @@ public class BackwardsSupergraph<T, P> implements ISupergraph<T, P> {
   public IntSet getPredNodeNumbers(Object node) throws UnimplementedError {
     Assertions.UNREACHABLE();
     return null;
+  }
+
+  @Override
+  public T getMethodExitNodeForStatement(T s) {
+    return delegate.getMethodExitNodeForStatement(s);
+  }
+
+  @Override
+  public T getMethodEntryNodeForStatement(T s) {
+    return delegate.getMethodEntryNodeForStatement(s);
+  }
+
+  @Override
+  public Kind getKind(T s) {
+    return delegate.getKind(s);
+  }
+
+  @Override
+  public boolean haveSameLocation(T first, T second) {
+    return delegate.haveSameLocation(first, second);
   }
 }

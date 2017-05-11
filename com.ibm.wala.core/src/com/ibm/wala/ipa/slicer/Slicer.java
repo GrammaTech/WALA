@@ -16,6 +16,7 @@ import java.util.Collections;
 import com.ibm.wala.dataflow.IFDS.BackwardsSupergraph;
 import com.ibm.wala.dataflow.IFDS.IMergeFunction;
 import com.ibm.wala.dataflow.IFDS.IPartiallyBalancedFlowFunctions;
+import com.ibm.wala.dataflow.IFDS.ISDGSupergraph;
 import com.ibm.wala.dataflow.IFDS.ISupergraph;
 import com.ibm.wala.dataflow.IFDS.PartiallyBalancedTabulationProblem;
 import com.ibm.wala.dataflow.IFDS.PartiallyBalancedTabulationSolver;
@@ -303,7 +304,7 @@ public class Slicer {
    * implement special semantics.
    */
   protected SliceProblem makeSliceProblem(Collection<Statement> roots, ISDG sdgView, boolean backward) {
-    return new SliceProblem(roots, sdgView, backward);
+    return new SliceProblem<Statement,PDG<? extends InstanceKey>>(roots, new SDGSupergraph(sdgView, backward), backward);
   }
 
   /**
@@ -331,32 +332,31 @@ public class Slicer {
    * Tabulation problem representing slicing
    * 
    */
-  public static class SliceProblem implements PartiallyBalancedTabulationProblem<Statement, PDG<?>, Object> {
+  public static class SliceProblem<T, P> implements PartiallyBalancedTabulationProblem<T, P, Object> {
 
-    private final Collection<Statement> roots;
+    private final Collection<T> roots;
 
-    private final ISupergraph<Statement, PDG<?>> supergraph;
+    private final ISDGSupergraph<T, P> supergraph;
 
-    private final SliceFunctions f;
+    private final SliceFunctions<T> f;
 
     private final boolean backward;
-    
-    private final TabulationDomain<Object, Statement> domain;
 
-    public SliceProblem(Collection<Statement> roots, ISDG sdg, boolean backward) {
+    private final TabulationDomain<Object, T> domain;
+
+    public SliceProblem(Collection<T> roots, ISDGSupergraph<T, P> supergraph, boolean backward) {
       this.roots = roots;
       this.backward = backward;
-      SDGSupergraph forwards = new SDGSupergraph(sdg, backward);
-      this.supergraph = backward ? BackwardsSupergraph.make(forwards) : forwards;
-      f = new SliceFunctions();
-      domain = new UnorderedDomain<Object, Statement>();
+      this.supergraph = backward ? BackwardsSupergraph.make(supergraph) : supergraph;
+      f = new SliceFunctions<T>(supergraph);
+      domain = new UnorderedDomain<Object, T>();
     }
 
     /*
      * @see com.ibm.wala.dataflow.IFDS.TabulationProblem#getDomain()
      */
     @Override
-    public TabulationDomain<Object, Statement> getDomain() {
+    public TabulationDomain<Object, T> getDomain() {
       // a dummy
       return domain;
     }
@@ -365,7 +365,7 @@ public class Slicer {
      * @see com.ibm.wala.dataflow.IFDS.TabulationProblem#getFunctionMap()
      */
     @Override
-    public IPartiallyBalancedFlowFunctions<Statement> getFunctionMap() {
+    public IPartiallyBalancedFlowFunctions<T> getFunctionMap() {
       return f;
     }
 
@@ -381,23 +381,23 @@ public class Slicer {
      * @see com.ibm.wala.dataflow.IFDS.TabulationProblem#getSupergraph()
      */
     @Override
-    public ISupergraph<Statement, PDG<?>> getSupergraph() {
+    public ISupergraph<T, P> getSupergraph() {
       return supergraph;
     }
 
     @Override
-    public Collection<PathEdge<Statement>> initialSeeds() {
+    public Collection<PathEdge<T>> initialSeeds() {
       if (backward) {
-        Collection<PathEdge<Statement>> result = HashSetFactory.make();
-        for (Statement st : roots) {
-          PathEdge<Statement> seed = PathEdge.createPathEdge(new MethodExitStatement(st.getNode()), 0, st, 0);
+        Collection<PathEdge<T>> result = HashSetFactory.make();
+        for (T st : roots) {
+          PathEdge<T> seed = PathEdge.createPathEdge(supergraph.getMethodExitNodeForStatement(st), 0, st, 0);
           result.add(seed);
         }
         return result;
       } else {
-        Collection<PathEdge<Statement>> result = HashSetFactory.make();
-        for (Statement st : roots) {
-          PathEdge<Statement> seed = PathEdge.createPathEdge(new MethodEntryStatement(st.getNode()), 0, st, 0);
+        Collection<PathEdge<T>> result = HashSetFactory.make();
+        for (T st : roots) {
+          PathEdge<T> seed = PathEdge.createPathEdge(supergraph.getMethodEntryNodeForStatement(st), 0, st, 0);
           result.add(seed);
         }
         return result;
@@ -405,8 +405,8 @@ public class Slicer {
     }
 
     @Override
-    public Statement getFakeEntry(Statement node) {
-      return backward ? new MethodExitStatement(node.getNode()) : new MethodEntryStatement(node.getNode());
+    public T getFakeEntry(T node) {
+      return backward ? supergraph.getMethodExitNodeForStatement(node) : supergraph.getMethodEntryNodeForStatement(node);
     }
 
   }
