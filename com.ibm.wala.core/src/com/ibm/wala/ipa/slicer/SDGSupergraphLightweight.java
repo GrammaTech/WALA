@@ -125,9 +125,22 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
    * That is, it is possible that a is a predecessor of b but b is not a
    * successor of a or vice versa, e.g. in cases involving reflection and
    * Class.newInstance().
+   * 
+   * We only handle the case where the destination is a *_RET_CALLER statement
+   * because that is the only use of hasEdge() in the TabulationSolver. For
+   * other destination statements WALA is known to exhibit strange behavior such
+   * as: b is a successor of a, a is a predecessor of b, yet hasEdge(a,b)
+   * returns false. This may be a bug in WALA.
+   * 
    */
   @Override
   public boolean hasEdge(Long src, Long dst) {
+    int kind = getKind(dst);
+    if (kind != Statement.Kind.NORMAL_RET_CALLER.ordinal() && kind != Statement.Kind.HEAP_RET_CALLER.ordinal()
+        && kind != Statement.Kind.EXC_RET_CALLER.ordinal()) {
+      throw new IllegalArgumentException(
+          "hasEdge() is not guaranteed correct for destinations of type " + Statement.Kind.values()[kind]);
+    }
     List<Long> srcSuccessors = successors.get(src);
     return (srcSuccessors != null && srcSuccessors.contains(dst));
   }
