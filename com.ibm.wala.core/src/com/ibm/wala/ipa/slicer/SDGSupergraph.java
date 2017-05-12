@@ -11,6 +11,7 @@
 package com.ibm.wala.ipa.slicer;
 
 import java.util.Iterator;
+import java.util.Set;
 
 import com.ibm.wala.dataflow.IFDS.ISDGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
@@ -67,24 +68,29 @@ public class SDGSupergraph implements ISDGSupergraph<Statement, PDG<? extends In
    */
   @Override
   public Iterator<? extends Statement> getCallSites(Statement r, PDG<? extends InstanceKey> callee) {
+    return getCallSitesAsSet(r, callee).iterator();
+  }
+  
+  @Override
+  public Set<Statement> getCallSitesAsSet(Statement r, PDG<? extends InstanceKey> callee) {
     switch (r.getKind()) {
     case EXC_RET_CALLER: {
       ExceptionalReturnCaller n = (ExceptionalReturnCaller) r;
       SSAAbstractInvokeInstruction call = n.getInstruction();
       PDG<?> pdg = getProcOf(r);
-      return pdg.getCallStatements(call).iterator();
+      return pdg.getCallStatements(call);
     }
     case NORMAL_RET_CALLER: {
       NormalReturnCaller n = (NormalReturnCaller) r;
       SSAAbstractInvokeInstruction call = n.getInstruction();
       PDG<?> pdg = getProcOf(r);
-      return pdg.getCallStatements(call).iterator();
+      return pdg.getCallStatements(call);
     }
     case HEAP_RET_CALLER: {
       HeapStatement.HeapReturnCaller n = (HeapStatement.HeapReturnCaller) r;
       SSAAbstractInvokeInstruction call = n.getCall();
       PDG<?> pdg = getProcOf(r);
-      return pdg.getCallStatements(call).iterator();
+      return pdg.getCallStatements(call);
     }
     default:
       Assertions.UNREACHABLE(r.getKind().toString());
@@ -196,24 +202,30 @@ public class SDGSupergraph implements ISDGSupergraph<Statement, PDG<? extends In
    */
   @Override
   public Iterator<? extends Statement> getReturnSites(Statement call, PDG<? extends InstanceKey> callee) {
+      return getReturnSitesAsSet(call, callee).iterator();
+  }
+
+  
+  @Override
+  public Set<Statement> getReturnSitesAsSet(Statement call, PDG<? extends InstanceKey> callee) {
     switch (call.getKind()) {
     case PARAM_CALLER: {
       ParamCaller n = (ParamCaller) call;
       SSAAbstractInvokeInstruction st = n.getInstruction();
       PDG<?> pdg = getProcOf(call);
-      return pdg.getCallerReturnStatements(st).iterator();
+      return pdg.getCallerReturnStatements(st);
     }
     case HEAP_PARAM_CALLER: {
       HeapStatement.HeapParamCaller n = (HeapStatement.HeapParamCaller) call;
       SSAAbstractInvokeInstruction st = n.getCall();
       PDG<?> pdg = getProcOf(call);
-      return pdg.getCallerReturnStatements(st).iterator();
+      return pdg.getCallerReturnStatements(st);
     }
     case NORMAL: {
       NormalStatement n = (NormalStatement) call;
       SSAAbstractInvokeInstruction st = (SSAAbstractInvokeInstruction) n.getInstruction();
       PDG<?> pdg = getProcOf(call);
-      return pdg.getCallerReturnStatements(st).iterator();
+      return pdg.getCallerReturnStatements(st);
     }
     default:
       Assertions.UNREACHABLE(call.getKind().toString());

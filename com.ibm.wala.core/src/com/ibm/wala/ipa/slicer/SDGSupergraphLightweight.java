@@ -3,7 +3,8 @@ package com.ibm.wala.ipa.slicer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
-import com.ibm.wala.dataflow.IFDS.ISupergraph;
+import com.ibm.wala.dataflow.IFDS.ISDGSupergraph;
+import com.ibm.wala.ipa.slicer.Statement.Kind;
 import com.ibm.wala.util.collections.EmptyIterator;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.Graph;
@@ -33,14 +34,15 @@ import java.util.Set;
  * settings so must be stored separately)
  */
 @JsonDeserialize(using = com.ibm.wala.ipa.slicer.json.SDGSupergraphLightweightDeserializer.class)
-public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
+public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
 
   // graph edge info
   // "b succ of a" does not necessarily imply "a pred of b" or vice versa
   // this lack of implication is also true in standard WALA SDGs
   // e.g. if code being analyzed uses Class.newInstance()
-  private final Map<Long, List<Long>> successors;
-  private final Map<Long, List<Long>> predecessors;
+  // node Id -> pdgId -> local Ids of successors
+  private final Table<Long, Integer, List<Integer>> successors;
+  private final Table<Long, Integer, List<Integer>> predecessors;
 
   // map every procedure (i.e., pdgId) to the set of entry/exit nodes
   // see SDGSupergraph.getEntriesForProcedure() and getExitsForProcedure()
@@ -65,8 +67,10 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   private Map<Integer, Long> intToNodeMap;
   private Map<Long, Integer> nodeToIntMap;
   private int maxCurrentId;
+  
+  private static final Statement.Kind[] STATEMENT_KIND_VALUES = Statement.Kind.values();
 
-  public SDGSupergraphLightweight(Map<Long, List<Long>> successors, Map<Long, List<Long>> predecessors,
+  public SDGSupergraphLightweight(Table<Long, Integer, List<Integer>> successors, Table<Long, Integer, List<Integer>> predecessors,
       Map<Integer, Long[]> procedureEntries, Map<Integer, Long[]> procedureExits, Map<Long, Integer> stmtsToCallIndexes,
       Table<Integer, Integer, Set<Long>> callStatementsForSite, Table<Integer, Integer, Set<Long>> returnStatementsForSite,
       Map<Long, Integer> locationHashCodes, Map<Long, Integer> locationToStringHashCodes,
@@ -103,18 +107,30 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
   @Override
   public Iterator<Long> getPredNodes(Long n) {
-    List<Long> preds = predecessors.get(n);
-    if (preds == null) {
+    Map<Integer,List<Integer>> predMap = predecessors.row(n);
+    if (predMap == null){
       return Collections.emptyIterator();
+    }
+    Set<Long> preds = new HashSet<Long>();
+    for (Integer pdgId: predMap.keySet()){
+      for (Integer localId: predMap.get(pdgId)){
+        preds.add(getLocalBlock(pdgId, localId));
+      }
     }
     return preds.iterator();
   }
 
   @Override
   public Iterator<Long> getSuccNodes(Long n) {
-    List<Long> succs = successors.get(n);
-    if (succs == null) {
+    Map<Integer,List<Integer>> succMap = successors.row(n);
+    if (succMap == null){
       return Collections.emptyIterator();
+    }
+    Set<Long> succs = new HashSet<Long>();
+    for (Integer pdgId: succMap.keySet()){
+      for (Integer localId: succMap.get(pdgId)){
+        succs.add(getLocalBlock(pdgId, localId));
+      }
     }
     return succs.iterator();
   }
@@ -126,23 +142,16 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
    * successor of a or vice versa, e.g. in cases involving reflection and
    * Class.newInstance().
    * 
-   * We only handle the case where the destination is a *_RET_CALLER statement
-   * because that is the only use of hasEdge() in the TabulationSolver. For
-   * other destination statements WALA is known to exhibit strange behavior such
-   * as: b is a successor of a, a is a predecessor of b, yet hasEdge(a,b)
-   * returns false. This may be a bug in WALA.
+   * Note also that WALA is known to exhibit strange behavior such as: b is a
+   * successor of a, a is a predecessor of b, yet hasEdge(a,b) returns false.
+   * The hasEdge() method below does not match WALA's hasEdge() behavior in such
+   * cases.
    * 
    */
   @Override
   public boolean hasEdge(Long src, Long dst) {
-    int kind = getKind(dst);
-    if (kind != Statement.Kind.NORMAL_RET_CALLER.ordinal() && kind != Statement.Kind.HEAP_RET_CALLER.ordinal()
-        && kind != Statement.Kind.EXC_RET_CALLER.ordinal()) {
-      throw new IllegalArgumentException(
-          "hasEdge() is not guaranteed correct for destinations of type " + Statement.Kind.values()[kind]);
-    }
-    List<Long> srcSuccessors = successors.get(src);
-    return (srcSuccessors != null && srcSuccessors.contains(dst));
+    List<Integer> srcSuccessors = successors.get(src, getProcOf(dst));
+    return (srcSuccessors != null && srcSuccessors.contains(getLocalBlockNumber(dst)));
   }
 
   @Override
@@ -155,6 +164,7 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return procExits.get(procedure);
   }
 
+  @Override
   public Set<Long> getCallSitesAsSet(Long ret, Integer callee) {
     Integer callIndex = stmtsToCallSites.get(ret);
     if (callIndex == null) { // not a return statement
@@ -163,6 +173,7 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return callStmtsForSite.get(getProcOf(ret), callIndex);
   }
 
+  @Override
   public Set<Long> getReturnSitesAsSet(Long call, Integer callee) {
     Integer callIndex = stmtsToCallSites.get(call);
     if (callIndex == null) { // not a call statement
@@ -183,8 +194,8 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
   @Override
   public Iterator<? extends Long> getCalledNodes(Long call) {
-    int kind = getKind(call);
-    if (kind == Statement.Kind.NORMAL.ordinal()) {
+    Kind kind = getKind(call);
+    if (kind == Statement.Kind.NORMAL) {
       Set<Long> result = new HashSet<Long>();
       Iterator<Long> succIter = getSuccNodes(call);
       while (succIter.hasNext()) {
@@ -194,10 +205,10 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
         }
       }
       return result.iterator();
-    } else if (kind == Statement.Kind.PARAM_CALLER.ordinal() || kind == Statement.Kind.HEAP_PARAM_CALLER.ordinal()) {
+    } else if (kind == Statement.Kind.PARAM_CALLER || kind == Statement.Kind.HEAP_PARAM_CALLER) {
       return getSuccNodes(call);
     }
-    Assertions.UNREACHABLE(Statement.Kind.values()[kind]);
+    Assertions.UNREACHABLE(kind);
     return null;
   }
 
@@ -212,9 +223,10 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
     return (int) ((n >> 35) & 536870911); // 2^29-1 i.e. a string of 29 1's
   }
 
-  // not in ISupergraph, handy for testing
-  public int getKind(Long stmt) {
-    return (int) ((stmt & 30) >> 1);
+  @Override
+  public Kind getKind(Long stmt) {
+    int ordinal = (int) ((stmt & 30) >> 1);
+    return STATEMENT_KIND_VALUES[ordinal];
   }
 
   @Override
@@ -224,23 +236,22 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
 
   @Override
   public boolean isReturn(Long n) {
-    int kind = getKind(n);
-    return (kind == Statement.Kind.EXC_RET_CALLER.ordinal() || kind == Statement.Kind.HEAP_RET_CALLER.ordinal()
-        || kind == Statement.Kind.NORMAL_RET_CALLER.ordinal());
+    Kind kind = getKind(n);
+    return (kind == Statement.Kind.EXC_RET_CALLER || kind == Statement.Kind.HEAP_RET_CALLER
+        || kind == Statement.Kind.NORMAL_RET_CALLER);
   }
 
   @Override
   public boolean isEntry(Long n) {
-    int kind = getKind(n);
-    return (kind == Statement.Kind.PARAM_CALLEE.ordinal() || kind == Statement.Kind.HEAP_PARAM_CALLEE.ordinal()
-        || kind == Statement.Kind.METHOD_ENTRY.ordinal());
+    Kind kind = getKind(n);
+    return (kind == Statement.Kind.PARAM_CALLEE || kind == Statement.Kind.HEAP_PARAM_CALLEE || kind == Statement.Kind.METHOD_ENTRY);
   }
 
   @Override
   public boolean isExit(Long n) {
-    int kind = getKind(n);
-    return (kind == Statement.Kind.EXC_RET_CALLEE.ordinal() || kind == Statement.Kind.HEAP_RET_CALLEE.ordinal()
-        || kind == Statement.Kind.NORMAL_RET_CALLEE.ordinal() || kind == Statement.Kind.METHOD_EXIT.ordinal());
+    Kind kind = getKind(n);
+    return (kind == Statement.Kind.EXC_RET_CALLEE || kind == Statement.Kind.HEAP_RET_CALLEE
+        || kind == Statement.Kind.NORMAL_RET_CALLEE || kind == Statement.Kind.METHOD_EXIT);
   }
 
   @Override
@@ -398,24 +409,27 @@ public class SDGSupergraphLightweight implements ISupergraph<Long, Integer> {
   // methods not in the ISupergraph interface but needed to set up
   // problem for slicing
 
+  @Override
   public Long getMethodEntryNodeForStatement(Long stmt) {
     for (Long candidate : procEntries.get(getProcOf(stmt))) {
-      if (getKind(candidate) == Statement.Kind.METHOD_ENTRY.ordinal()) {
+      if (getKind(candidate) == Statement.Kind.METHOD_ENTRY) {
         return candidate;
       }
     }
     throw new IllegalArgumentException("No method entry found for statement " + stmt);
   }
 
+  @Override
   public Long getMethodExitNodeForStatement(Long stmt) {
     for (Long candidate : procExits.get(getProcOf(stmt))) {
-      if (getKind(candidate) == Statement.Kind.METHOD_EXIT.ordinal()) {
+      if (getKind(candidate) == Statement.Kind.METHOD_EXIT) {
         return candidate;
       }
     }
     throw new IllegalArgumentException("No method exit found for statement " + stmt);
   }
 
+  @Override
   public boolean haveSameLocation(Long stmt1, Long stmt2) {
     return locationHashCodes.get(stmt1).equals(locationHashCodes.get(stmt2))
         && locationToStringHashCodes.get(stmt1).equals(locationToStringHashCodes.get(stmt2));

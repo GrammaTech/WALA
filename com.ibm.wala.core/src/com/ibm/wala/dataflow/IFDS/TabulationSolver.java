@@ -570,11 +570,9 @@ public class TabulationSolver<T, P, F> {
     // c:= number of the call node
     final int c = supergraph.getNumber(edge.target);
 
-    Collection<T> allReturnSites = HashSetFactory.make();
     // populate allReturnSites with return sites for missing calls.
-    for (Iterator<? extends T> it = supergraph.getReturnSites(edge.target, null); it.hasNext();) {
-      allReturnSites.add(it.next());
-    }
+    Collection<T> allReturnSites = supergraph.getReturnSitesAsSet(edge.target, null);
+
     // [14 - 16]
     boolean hasCallee = false;
     for (Iterator<? extends T> it = supergraph.getCalledNodes(edge.target); it.hasNext();) {
@@ -659,8 +657,8 @@ public class TabulationSolver<T, P, F> {
     }
     // reached := {d1} that reach the callee
     MutableSparseIntSet reached = MutableSparseIntSet.makeEmpty();
-    final Collection<T> returnSitesForCallee = Iterator2Collection.toSet(supergraph.getReturnSites(edge.target, supergraph
-        .getProcOf(calleeEntry)));
+    final Collection<T> returnSitesForCallee = supergraph.getReturnSitesAsSet(edge.target, supergraph
+        .getProcOf(calleeEntry));
     allReturnSites.addAll(returnSitesForCallee);
     // we modify this to handle each return site individually. Some types of problems
     // compute different flow functions for each return site.

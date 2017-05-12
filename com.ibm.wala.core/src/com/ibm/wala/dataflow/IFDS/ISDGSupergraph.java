@@ -30,6 +30,7 @@ public interface ISDGSupergraph<T, P> extends ISupergraph<T, P> {
    * Check whether the two HeapStatements first and second have the same
    * location
    */
-  boolean haveSameLocation(T first, T second);
+  public boolean haveSameLocation(T first, T second);
+  
 
 }

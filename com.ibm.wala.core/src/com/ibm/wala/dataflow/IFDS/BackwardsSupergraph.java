@@ -11,6 +11,7 @@
 package com.ibm.wala.dataflow.IFDS;
 
 import java.util.Iterator;
+import java.util.Set;
 
 import com.ibm.wala.ipa.slicer.Statement.Kind;
 import com.ibm.wala.util.Predicate;
@@ -135,6 +136,10 @@ public class BackwardsSupergraph<T, P> implements ISDGSupergraph<T, P> {
     return delegate.getCallSites(c, callee);
   }
 
+  @Override
+  public Set<T> getReturnSitesAsSet(T call, P callee) {
+    return delegate.getCallSitesAsSet(call, callee);
+  }
   /*
    * @see com.ibm.wala.dataflow.IFDS.ISupergraph#isExit(java.lang.Object)
    */
@@ -286,6 +291,11 @@ public class BackwardsSupergraph<T, P> implements ISDGSupergraph<T, P> {
   @Override
   public Iterator<? extends T> getCallSites(T r, P callee) {
     return delegate.getReturnSites(r, callee);
+  }
+  
+  @Override
+  public Set<T> getCallSitesAsSet(T ret, P callee) {
+    return delegate.getReturnSitesAsSet(ret, callee);
   }
 
   /*

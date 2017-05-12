@@ -286,7 +286,7 @@ public class Slicer {
 
     return slice;
   }
-  
+ 
   /** 
    * same as the other slice method, but without threshold
    * @param sdg
@@ -297,6 +297,21 @@ public class Slicer {
    */
   public Collection<Statement> slice(SDG sdg, Collection<Statement> roots, boolean backward) throws CancelException {
     return slice(sdg,roots,backward,-1,-1);
+  }
+  
+  /**
+   * Slice method for SDGSupergraphLightweight
+   */
+  public Collection<Long> slice(SDGSupergraphLightweight sdg, Collection<Long> roots, boolean backward) throws CancelException {
+    if (sdg == null) {
+      throw new IllegalArgumentException("sdg cannot be null");
+    }
+    SliceProblem<Long, Integer> p = new SliceProblem<Long, Integer>(roots, sdg, backward);
+    PartiallyBalancedTabulationSolver<Long, Integer, Object> solver = PartiallyBalancedTabulationSolver
+        .createPartiallyBalancedTabulationSolver(p, null);
+    TabulationResult<Long, Integer, Object> tr = solver.solve();
+    Collection<Long> slice = tr.getSupergraphNodesReached();
+    return slice;
   }
 
   /**
