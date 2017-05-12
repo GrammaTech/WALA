@@ -40,9 +40,8 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
   // "b succ of a" does not necessarily imply "a pred of b" or vice versa
   // this lack of implication is also true in standard WALA SDGs
   // e.g. if code being analyzed uses Class.newInstance()
-  // node Id -> pdgId -> local Ids of successors
-  private final Table<Long, Integer, List<Integer>> successors;
-  private final Table<Long, Integer, List<Integer>> predecessors;
+  private final Map<Long, Set<Long>> successors;
+  private final Map<Long, Set<Long>> predecessors;
 
   // map every procedure (i.e., pdgId) to the set of entry/exit nodes
   // see SDGSupergraph.getEntriesForProcedure() and getExitsForProcedure()
@@ -70,7 +69,7 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
   
   private static final Statement.Kind[] STATEMENT_KIND_VALUES = Statement.Kind.values();
 
-  public SDGSupergraphLightweight(Table<Long, Integer, List<Integer>> successors, Table<Long, Integer, List<Integer>> predecessors,
+  public SDGSupergraphLightweight(Map<Long, Set<Long>> successors, Map<Long, Set<Long>> predecessors,
       Map<Integer, Long[]> procedureEntries, Map<Integer, Long[]> procedureExits, Map<Long, Integer> stmtsToCallIndexes,
       Table<Integer, Integer, Set<Long>> callStatementsForSite, Table<Integer, Integer, Set<Long>> returnStatementsForSite,
       Map<Long, Integer> locationHashCodes, Map<Long, Integer> locationToStringHashCodes,
@@ -107,30 +106,18 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
 
   @Override
   public Iterator<Long> getPredNodes(Long n) {
-    Map<Integer,List<Integer>> predMap = predecessors.row(n);
-    if (predMap == null){
+    Set<Long> preds = predecessors.get(n);
+    if (preds == null) {
       return Collections.emptyIterator();
-    }
-    Set<Long> preds = new HashSet<Long>();
-    for (Integer pdgId: predMap.keySet()){
-      for (Integer localId: predMap.get(pdgId)){
-        preds.add(getLocalBlock(pdgId, localId));
-      }
     }
     return preds.iterator();
   }
 
   @Override
   public Iterator<Long> getSuccNodes(Long n) {
-    Map<Integer,List<Integer>> succMap = successors.row(n);
-    if (succMap == null){
+    Set<Long> succs = successors.get(n);
+    if (succs == null) {
       return Collections.emptyIterator();
-    }
-    Set<Long> succs = new HashSet<Long>();
-    for (Integer pdgId: succMap.keySet()){
-      for (Integer localId: succMap.get(pdgId)){
-        succs.add(getLocalBlock(pdgId, localId));
-      }
     }
     return succs.iterator();
   }
@@ -150,8 +137,8 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
    */
   @Override
   public boolean hasEdge(Long src, Long dst) {
-    List<Integer> srcSuccessors = successors.get(src, getProcOf(dst));
-    return (srcSuccessors != null && srcSuccessors.contains(getLocalBlockNumber(dst)));
+    Set<Long> srcSuccessors = successors.get(src);
+    return (srcSuccessors != null && srcSuccessors.contains(dst));
   }
 
   @Override

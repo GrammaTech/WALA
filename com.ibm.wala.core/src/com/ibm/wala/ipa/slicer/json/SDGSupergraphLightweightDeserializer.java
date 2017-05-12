@@ -11,6 +11,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Sets;
 import com.ibm.wala.ipa.slicer.SDGSupergraphLightweight;
 import com.ibm.wala.ipa.slicer.Statement;
+import com.ibm.wala.util.collections.MapUtil;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,8 +26,8 @@ import java.util.Set;
 public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSupergraphLightweight> {
 
   // data structures needed in SDGSupergraphLightweight
-  private Table<Long, Integer, List<Integer>> successors;
-  private Table<Long, Integer, List<Integer>> predecessors;
+  private Map<Long, Set<Long>> successors;
+  private Map<Long, Set<Long>> predecessors;
   private Map<Integer, Long[]> procEntries;
   private Map<Integer, Long[]> procExits;
   private Table<Integer, Integer, Set<Long>> callStmtsForSite;
@@ -72,8 +73,8 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   public SDGSupergraphLightweight deserialize(JsonParser parser, DeserializationContext deserializationContext)
       throws IOException, JsonProcessingException {
 
-    successors = HashBasedTable.create();
-    predecessors = HashBasedTable.create();
+    successors = new HashMap<Long,Set<Long>>();
+    predecessors = new HashMap<Long,Set<Long>>();
     procEntries = new HashMap<Integer, Long[]>();
     procExits = new HashMap<Integer, Long[]>();
     callStmtsForSite = HashBasedTable.create();
@@ -280,28 +281,18 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         Iterator<JsonNode> succIterator = jsonNode.get("successors").iterator();
         while (succIterator.hasNext()) {
           JsonNode succ = succIterator.next();
-          int succPdgId = succ.get(0).asInt();
-          int succLocalId = succ.get(1).asInt();
-          List<Integer> currentSuccessors = successors.get(src, succPdgId);
-          if (currentSuccessors == null) {
-            currentSuccessors = new LinkedList<Integer>();
-            successors.put(src, succPdgId, currentSuccessors);
-          }
-          currentSuccessors.add(succLocalId);
+          Long succId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap,succ.get(0).asInt(), succ.get(1).asInt());
+          Set<Long> currentSuccessors = MapUtil.findOrCreateSet(successors, src);
+          currentSuccessors.add(succId);
         }
       }
       if (jsonNode.get("predecessors") != null) {
         Iterator<JsonNode> predIterator = jsonNode.get("predecessors").iterator();
         while (predIterator.hasNext()) {
           JsonNode pred = predIterator.next();
-          int predPdgId = pred.get(0).asInt();
-          int predLocalId = pred.get(1).asInt();
-          List<Integer> currentPredecessors = predecessors.get(src, predPdgId);
-          if (currentPredecessors == null) {
-            currentPredecessors = new LinkedList<Integer>();
-            predecessors.put(src, predPdgId, currentPredecessors);
-          }
-          currentPredecessors.add(predLocalId);
+          Long predId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap,pred.get(0).asInt(), pred.get(1).asInt());
+          Set<Long> currentPredecessors = MapUtil.findOrCreateSet(predecessors, src);
+          currentPredecessors.add(predId);
         }
       }
     }
