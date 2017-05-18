@@ -17,7 +17,7 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 /**
  * A {@link Statement} representing an actual parameter
  */
-@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.ParamCallerSerializer.class)
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.CallSiteStatementSerializer.class)
 public class ParamCaller extends StatementWithInstructionIndex implements ValueNumberCarrier {
   /**
    * Value number of the actual parameter

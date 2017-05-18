@@ -18,7 +18,7 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
  * A {@link Statement} representing the normal return value in a caller,
  * immediately after returning to the caller.
  */
-@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.NormalReturnCallerSerializer.class)
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.CallSiteStatementSerializer.class)
 public class NormalReturnCaller extends StatementWithInstructionIndex implements ValueNumberCarrier {
 
   public NormalReturnCaller(CGNode node, int callIndex) {

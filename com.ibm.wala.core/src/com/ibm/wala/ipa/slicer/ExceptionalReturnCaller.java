@@ -18,7 +18,7 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
  * A {@link Statement} representing the exceptional return value in a caller,
  * immediately after returning to the caller.
  */
-@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.ExceptionalReturnCallerSerializer.class)
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.CallSiteStatementSerializer.class)
 public class ExceptionalReturnCaller extends StatementWithInstructionIndex implements ValueNumberCarrier {
 
   public ExceptionalReturnCaller(CGNode node, int callIndex) {
