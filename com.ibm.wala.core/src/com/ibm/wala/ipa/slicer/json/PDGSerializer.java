@@ -40,6 +40,7 @@ public class PDGSerializer extends StdSerializer<PDG<? extends InstanceKey>> {
     // write metadata about CG Node
     CGNode cgNode = pdg.getCallGraphNode();
     jsonGenerator.writeStringField("method", cgNode.getMethod().getSignature());
+    jsonGenerator.writeStringField("classLoader", cgNode.getMethod().getDeclaringClass().getClassLoader().toString());
     jsonGenerator.writeStringField("context", cgNode.getContext().toString());
     // write nodes
     jsonGenerator.writeFieldName("nodes");
