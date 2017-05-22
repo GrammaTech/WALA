@@ -12,6 +12,7 @@ import com.google.common.collect.Sets;
 import com.ibm.wala.ipa.slicer.SDGSupergraphLightweight;
 import com.ibm.wala.ipa.slicer.Statement;
 import com.ibm.wala.util.collections.MapUtil;
+import com.ibm.wala.util.math.LongUtil;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,8 +33,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   private Table<Integer, Integer, Set<Long>> callStmtsForSite;
   private Table<Integer, Integer, Set<Long>> retStmtsForSite;
   private Map<Long, Integer> stmtsToCallSites;
-  private Map<Long, Integer> locationHashCodes;
-  private Map<Long, Integer> locationToStringHashCodes;
+  private Map<Long, Long> locationInfo;
   private Table<Integer, Integer, Byte> kindInfoMap;
 
   private ControlDependenceOptions cOptions;
@@ -72,15 +72,14 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
   public SDGSupergraphLightweight deserialize(JsonParser parser, DeserializationContext deserializationContext)
       throws IOException, JsonProcessingException {
 
-    successors = new HashMap<Long,Set<Long>>();
-    predecessors = new HashMap<Long,Set<Long>>();
+    successors = new HashMap<Long, Set<Long>>();
+    predecessors = new HashMap<Long, Set<Long>>();
     procEntries = new HashMap<Integer, Long[]>();
     procExits = new HashMap<Integer, Long[]>();
     callStmtsForSite = HashBasedTable.create();
     retStmtsForSite = HashBasedTable.create();
     stmtsToCallSites = new HashMap<Long, Integer>();
-    locationHashCodes = new HashMap<Long, Integer>();
-    locationToStringHashCodes = new HashMap<Long, Integer>();
+    locationInfo = new HashMap<Long, Long>();
     kindInfoMap = HashBasedTable.create();
 
     long startTime = System.currentTimeMillis();
@@ -97,7 +96,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
     }
 
     return new SDGSupergraphLightweight(successors, predecessors, procEntries, procExits, stmtsToCallSites, callStmtsForSite,
-        retStmtsForSite, locationHashCodes, locationToStringHashCodes, kindInfoMap);
+        retStmtsForSite, locationInfo, kindInfoMap);
   }
 
   private void parseControlDepOptions(JsonParser parser) throws IOException {
@@ -197,8 +196,9 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
       }
     }
     if (HEAP_STMT_TYPES.contains(stmtKind)) {
-      locationHashCodes.put(longId, stmt.get("statement").get("locationHashCode").asInt());
-      locationToStringHashCodes.put(longId, stmt.get("statement").get("locationToStringHashCode").asInt());
+      int locationHashCode = stmt.get("statement").get("locationHashCode").asInt();
+      int locationToStringHashCode = stmt.get("statement").get("locationToStringHashCode").asInt();
+      locationInfo.put(longId, LongUtil.pack(locationHashCode, locationToStringHashCode));
     }
   }
 
@@ -280,7 +280,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         Iterator<JsonNode> succIterator = jsonNode.get("successors").iterator();
         while (succIterator.hasNext()) {
           JsonNode succ = succIterator.next();
-          Long succId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap,succ.get(0).asInt(), succ.get(1).asInt());
+          Long succId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap, succ.get(0).asInt(), succ.get(1).asInt());
           Set<Long> currentSuccessors = MapUtil.findOrCreateSet(successors, src);
           currentSuccessors.add(succId);
         }
@@ -289,7 +289,7 @@ public class SDGSupergraphLightweightDeserializer extends StdDeserializer<SDGSup
         Iterator<JsonNode> predIterator = jsonNode.get("predecessors").iterator();
         while (predIterator.hasNext()) {
           JsonNode pred = predIterator.next();
-          Long predId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap,pred.get(0).asInt(), pred.get(1).asInt());
+          Long predId = SDGSupergraphLightweight.getLocalBlock(kindInfoMap, pred.get(0).asInt(), pred.get(1).asInt());
           Set<Long> currentPredecessors = MapUtil.findOrCreateSet(predecessors, src);
           currentPredecessors.add(predId);
         }

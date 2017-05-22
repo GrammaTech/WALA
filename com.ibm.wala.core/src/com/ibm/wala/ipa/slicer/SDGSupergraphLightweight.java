@@ -55,8 +55,7 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
   private final Table<Integer, Integer, Set<Long>> retStmtsForSite;
 
   // maps used to compare locations for HeapStatements
-  private Map<Long, Integer> locationHashCodes;
-  private Map<Long, Integer> locationToStringHashCodes;
+  private Map<Long, Long> locationInfo;
 
   // pdgId -> localId -> last 5 bits of Long id encoding (Kind and isCall)
   private Table<Integer, Integer, Byte> kindInfoMap;
@@ -71,8 +70,7 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
   public SDGSupergraphLightweight(Map<Long, Set<Long>> successors, Map<Long, Set<Long>> predecessors,
       Map<Integer, Long[]> procedureEntries, Map<Integer, Long[]> procedureExits, Map<Long, Integer> stmtsToCallIndexes,
       Table<Integer, Integer, Set<Long>> callStatementsForSite, Table<Integer, Integer, Set<Long>> returnStatementsForSite,
-      Map<Long, Integer> locationHashCodes, Map<Long, Integer> locationToStringHashCodes,
-      Table<Integer, Integer, Byte> kindInfoMap) {
+      Map<Long, Long> locationInfo, Table<Integer, Integer, Byte> kindInfoMap) {
     this.successors = successors;
     this.predecessors = predecessors;
     this.procEntries = procedureEntries;
@@ -80,8 +78,7 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
     this.stmtsToCallSites = stmtsToCallIndexes;
     this.callStmtsForSite = callStatementsForSite;
     this.retStmtsForSite = returnStatementsForSite;
-    this.locationHashCodes = locationHashCodes;
-    this.locationToStringHashCodes = locationToStringHashCodes;
+    this.locationInfo = locationInfo;
     this.kindInfoMap = kindInfoMap;
     this.intToNodeMap = new HashMap<Integer, Long>();
     this.nodeToIntMap = new HashMap<Long, Integer>();
@@ -417,8 +414,7 @@ public class SDGSupergraphLightweight implements ISDGSupergraph<Long, Integer> {
 
   @Override
   public boolean haveSameLocation(Long stmt1, Long stmt2) {
-    return locationHashCodes.get(stmt1).equals(locationHashCodes.get(stmt2))
-        && locationToStringHashCodes.get(stmt1).equals(locationToStringHashCodes.get(stmt2));
+    return locationInfo.get(stmt1).equals(locationInfo.get(stmt2));
   }
 
   /**

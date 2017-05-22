@@ -13,7 +13,7 @@ package com.ibm.wala.ipa.slicer;
 import java.util.Collection;
 import java.util.Collections;
 
-import com.ibm.wala.dataflow.IFDS.BackwardsSupergraph;
+import com.ibm.wala.dataflow.IFDS.BackwardsSDGSupergraph;
 import com.ibm.wala.dataflow.IFDS.IMergeFunction;
 import com.ibm.wala.dataflow.IFDS.IPartiallyBalancedFlowFunctions;
 import com.ibm.wala.dataflow.IFDS.ISDGSupergraph;
@@ -302,16 +302,21 @@ public class Slicer {
   /**
    * Slice method for SDGSupergraphLightweight
    */
-  public Collection<Long> slice(SDGSupergraphLightweight sdg, Collection<Long> roots, boolean backward) throws CancelException {
+  public Collection<Long> slice(SDGSupergraphLightweight sdg, Collection<Long> roots, boolean backward, int threshold,
+      long timeoutSec) throws CancelException {
     if (sdg == null) {
       throw new IllegalArgumentException("sdg cannot be null");
     }
     SliceProblem<Long, Integer> p = new SliceProblem<Long, Integer>(roots, sdg, backward);
     PartiallyBalancedTabulationSolver<Long, Integer, Object> solver = PartiallyBalancedTabulationSolver
         .createPartiallyBalancedTabulationSolver(p, null);
-    TabulationResult<Long, Integer, Object> tr = solver.solve();
+    TabulationResult<Long, Integer, Object> tr = solver.solve(threshold, timeoutSec);
     Collection<Long> slice = tr.getSupergraphNodesReached();
     return slice;
+  }
+
+  public Collection<Long> slice(SDGSupergraphLightweight sdg, Collection<Long> roots, boolean backward) throws CancelException {
+    return slice(sdg, roots, backward, -1, -1);
   }
 
   /**
@@ -362,7 +367,7 @@ public class Slicer {
     public SliceProblem(Collection<T> roots, ISDGSupergraph<T, P> supergraph, boolean backward) {
       this.roots = roots;
       this.backward = backward;
-      this.supergraph = backward ? BackwardsSupergraph.make(supergraph) : supergraph;
+      this.supergraph = backward ? BackwardsSDGSupergraph.make(supergraph) : supergraph;
       f = new SliceFunctions<T>(supergraph);
       domain = new UnorderedDomain<Object, T>();
     }

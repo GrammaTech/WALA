@@ -27,7 +27,7 @@ import com.ibm.wala.util.intset.IntSet;
  * 
  * In this view, a return is treated like a call, and vice-versa. All normal edges are reversed.
  */
-public class BackwardsSupergraph<T, P> implements ISDGSupergraph<T, P> {
+public class BackwardsSDGSupergraph<T, P> implements ISDGSupergraph<T, P> {
 
   /**
    * DEBUG_LEVEL:
@@ -46,15 +46,15 @@ public class BackwardsSupergraph<T, P> implements ISDGSupergraph<T, P> {
   /**
    * @param forwardGraph the graph to ``reverse''
    */
-  protected BackwardsSupergraph(ISDGSupergraph<T, P> forwardGraph) {
+  protected BackwardsSDGSupergraph(ISDGSupergraph<T, P> forwardGraph) {
     if (forwardGraph == null) {
       throw new IllegalArgumentException("null forwardGraph");
     }
     this.delegate = forwardGraph;
   }
 
-  public static <T, P> BackwardsSupergraph<T, P> make(ISDGSupergraph<T, P> forwardGraph) {
-    return new BackwardsSupergraph<T, P>(forwardGraph);
+  public static <T, P> BackwardsSDGSupergraph<T, P> make(ISDGSupergraph<T, P> forwardGraph) {
+    return new BackwardsSDGSupergraph<T, P>(forwardGraph);
   }
 
   /**

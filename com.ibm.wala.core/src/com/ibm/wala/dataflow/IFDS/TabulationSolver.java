@@ -734,7 +734,7 @@ public class TabulationSolver<T, P, F> {
               if (reachedBySummary != null) {
                 List<T> returnSitesForExit = exitMap.get(exit);
                 if (returnSitesForExit == null) {
-                  return;
+                  continue;
                 }
                 for (final T returnSite : returnSitesForExit) {
                   if (timedOut(timeout)) {

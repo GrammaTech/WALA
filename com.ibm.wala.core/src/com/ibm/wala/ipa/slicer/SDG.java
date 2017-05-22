@@ -133,17 +133,33 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
    */
   private boolean eagerComputed = false;
 
-  public SDG(final CallGraph cg, PointerAnalysis<T> pa, Class<T> instanceKeyClass, DataDependenceOptions dOptions, ControlDependenceOptions cOptions) {
-    this(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions, null);
+  public SDG(final CallGraph cg, PointerAnalysis<T> pa, Class<T> instanceKeyClass, DataDependenceOptions dOptions,
+      ControlDependenceOptions cOptions) {
+    this(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions, null, MAX_PDGS_TO_CACHE);
+  }
+
+  public SDG(final CallGraph cg, PointerAnalysis<T> pa, Class<T> instanceKeyClass, DataDependenceOptions dOptions,
+      ControlDependenceOptions cOptions, int maxPdgCacheSize) {
+    this(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions, null, maxPdgCacheSize);
   }
 
   public SDG(final CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
       ControlDependenceOptions cOptions) {
-    this(cg, pa, modRef, dOptions, cOptions, null);
+    this(cg, pa, modRef, dOptions, cOptions, null, MAX_PDGS_TO_CACHE);
+  }
+
+  public SDG(final CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
+      ControlDependenceOptions cOptions, int maxPdgCacheSize) {
+    this(cg, pa, modRef, dOptions, cOptions, null, maxPdgCacheSize);
   }
 
   public SDG(CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
-      ControlDependenceOptions cOptions, HeapExclusions heapExclude) throws IllegalArgumentException {
+      ControlDependenceOptions cOptions, HeapExclusions heapExclude) {
+    this(cg, pa, modRef, dOptions, cOptions, heapExclude, MAX_PDGS_TO_CACHE);
+  }
+      
+  public SDG(CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
+      ControlDependenceOptions cOptions, HeapExclusions heapExclude, int maxPdgCacheSize) throws IllegalArgumentException {
     super();
     if (dOptions == null) {
       throw new IllegalArgumentException("dOptions must not be null");
@@ -157,7 +173,7 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
     this.cOptions = cOptions;
     this.heapExclude = heapExclude;
 
-    pdgMap = CacheBuilder.newBuilder().maximumSize(MAX_PDGS_TO_CACHE).build(new CacheLoader<CGNode, PDG<T>>() {
+    pdgMap = CacheBuilder.newBuilder().maximumSize(maxPdgCacheSize).build(new CacheLoader<CGNode, PDG<T>>() {
       @Override
       public PDG<T> load(CGNode node) {
         return createPDG(node);
