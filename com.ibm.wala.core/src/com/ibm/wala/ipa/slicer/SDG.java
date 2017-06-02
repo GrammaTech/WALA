@@ -91,12 +91,6 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
   private LoadingCache<CGNode, PDG<T>> pdgMap;
 
   /**
-   * How many PDGs to cache by default (all are cached if eagerConstruction() is
-   * ever called)
-   */
-  private final static int MAX_PDGS_TO_CACHE = 1000;
-
-  /**
    * governs data dependence edges in the graph
    */
   private final DataDependenceOptions dOptions;
@@ -132,34 +126,10 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
    * Have we eagerly populated all nodes of this SDG?
    */
   private boolean eagerComputed = false;
-
-  public SDG(final CallGraph cg, PointerAnalysis<T> pa, Class<T> instanceKeyClass, DataDependenceOptions dOptions,
-      ControlDependenceOptions cOptions) {
-    this(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions, null, MAX_PDGS_TO_CACHE);
-  }
-
-  public SDG(final CallGraph cg, PointerAnalysis<T> pa, Class<T> instanceKeyClass, DataDependenceOptions dOptions,
-      ControlDependenceOptions cOptions, int maxPdgCacheSize) {
-    this(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions, null, maxPdgCacheSize);
-  }
-
-  public SDG(final CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
-      ControlDependenceOptions cOptions) {
-    this(cg, pa, modRef, dOptions, cOptions, null, MAX_PDGS_TO_CACHE);
-  }
-
-  public SDG(final CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
-      ControlDependenceOptions cOptions, int maxPdgCacheSize) {
-    this(cg, pa, modRef, dOptions, cOptions, null, maxPdgCacheSize);
-  }
-
-  public SDG(CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
-      ControlDependenceOptions cOptions, HeapExclusions heapExclude) {
-    this(cg, pa, modRef, dOptions, cOptions, heapExclude, MAX_PDGS_TO_CACHE);
-  }
       
   public SDG(CallGraph cg, PointerAnalysis<T> pa, ModRef<T> modRef, DataDependenceOptions dOptions,
-      ControlDependenceOptions cOptions, HeapExclusions heapExclude, int maxPdgCacheSize) throws IllegalArgumentException {
+      ControlDependenceOptions cOptions, HeapExclusions heapExclude, boolean allowCacheEviction, int maxPdgCacheSize)
+          throws IllegalArgumentException {
     super();
     if (dOptions == null) {
       throw new IllegalArgumentException("dOptions must not be null");
@@ -173,12 +143,21 @@ public class SDG<T extends InstanceKey> extends AbstractNumberedGraph<Statement>
     this.cOptions = cOptions;
     this.heapExclude = heapExclude;
 
-    pdgMap = CacheBuilder.newBuilder().maximumSize(maxPdgCacheSize).build(new CacheLoader<CGNode, PDG<T>>() {
-      @Override
-      public PDG<T> load(CGNode node) {
-        return createPDG(node);
-      }
-    });
+    if (allowCacheEviction) {
+      pdgMap = CacheBuilder.newBuilder().maximumSize(maxPdgCacheSize).build(new CacheLoader<CGNode, PDG<T>>() {
+        @Override
+        public PDG<T> load(CGNode node) {
+          return createPDG(node);
+        }
+      });
+    } else {
+      pdgMap = CacheBuilder.newBuilder().build(new CacheLoader<CGNode, PDG<T>>() {
+        @Override
+        public PDG<T> load(CGNode node) {
+          return createPDG(node);
+        }
+      });
+    }
   }
 
   /**

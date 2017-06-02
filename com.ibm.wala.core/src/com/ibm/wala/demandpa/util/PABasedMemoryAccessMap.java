@@ -25,6 +25,7 @@ import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.modref.ModRef;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.SDGBuilder;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
 import com.ibm.wala.ipa.slicer.Statement;
@@ -52,7 +53,8 @@ public class PABasedMemoryAccessMap implements MemoryAccessMap {
   private final Map<PointerKey, Set<Statement>> invRef;
 
   public PABasedMemoryAccessMap(CallGraph cg, PointerAnalysis<InstanceKey> pa) {
-    this(cg, pa, new SDG<InstanceKey>(cg, pa, InstanceKey.class, DataDependenceOptions.NO_BASE_NO_HEAP_NO_EXCEPTIONS, ControlDependenceOptions.NONE));
+    this(cg, pa, new SDGBuilder<InstanceKey>().setCg(cg).setPa(pa).computeAndSetModRef(InstanceKey.class)
+        .setdOptions(DataDependenceOptions.NO_BASE_NO_HEAP_NO_EXCEPTIONS).setcOptions(ControlDependenceOptions.NONE).build());
   }
 
   public PABasedMemoryAccessMap(CallGraph cg, PointerAnalysis<InstanceKey> pa, SDG<InstanceKey> sdg) {

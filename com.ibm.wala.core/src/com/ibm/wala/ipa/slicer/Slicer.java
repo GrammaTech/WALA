@@ -142,8 +142,15 @@ public class Slicer {
    * @throws CancelException
    */
   public static <U extends InstanceKey> Collection<Statement> computeBackwardSlice(Statement s, CallGraph cg, PointerAnalysis<U> pa,
-      Class<U> instanceKeyClass, DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold, long timeoutSec) throws IllegalArgumentException, CancelException {
-    return computeSlice(new SDG<U>(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions), Collections.singleton(s), true, threshold, timeoutSec);
+      Class<U> instanceKeyClass, DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold, long timeoutSec)
+          throws IllegalArgumentException, CancelException {
+    SDGBuilder<U> sdgBuilder = new SDGBuilder<U>();
+    sdgBuilder.setCg(cg);
+    sdgBuilder.setPa(pa);
+    sdgBuilder.setModRef(ModRef.make(instanceKeyClass));
+    sdgBuilder.setcOptions(cOptions);
+    sdgBuilder.setdOptions(dOptions);
+    return computeSlice(sdgBuilder.build(), Collections.singleton(s), true, threshold, timeoutSec);
   }
 
   /**
@@ -162,9 +169,16 @@ public class Slicer {
    * @return the forward slice of s.
    * @throws CancelException
    */
-  public static <U extends InstanceKey> Collection<Statement> computeForwardSlice(Statement s, CallGraph cg, PointerAnalysis<U> pa, Class<U> instanceKeyClass,
-      DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold, long timeoutSec) throws IllegalArgumentException, CancelException {
-    return computeSlice(new SDG<U>(cg, pa, ModRef.make(instanceKeyClass), dOptions, cOptions), Collections.singleton(s), false, threshold, timeoutSec);
+  public static <U extends InstanceKey> Collection<Statement> computeForwardSlice(Statement s, CallGraph cg, PointerAnalysis<U> pa,
+      Class<U> instanceKeyClass, DataDependenceOptions dOptions, ControlDependenceOptions cOptions, int threshold, long timeoutSec)
+          throws IllegalArgumentException, CancelException {
+    SDGBuilder<U> sdgBuilder = new SDGBuilder<U>();
+    sdgBuilder.setCg(cg);
+    sdgBuilder.setPa(pa);
+    sdgBuilder.setModRef(ModRef.make(instanceKeyClass));
+    sdgBuilder.setcOptions(cOptions);
+    sdgBuilder.setdOptions(dOptions);
+    return computeSlice(sdgBuilder.build(), Collections.singleton(s), false, threshold, timeoutSec);
   }
 
   /**

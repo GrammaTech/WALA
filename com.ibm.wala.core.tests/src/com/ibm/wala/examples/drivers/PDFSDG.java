@@ -31,6 +31,7 @@ import com.ibm.wala.ipa.slicer.HeapStatement;
 import com.ibm.wala.ipa.slicer.MethodEntryStatement;
 import com.ibm.wala.ipa.slicer.MethodExitStatement;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.SDGBuilder;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
 import com.ibm.wala.ipa.slicer.Statement;
@@ -131,7 +132,13 @@ public class PDFSDG {
       CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
       CallGraph cg = builder.makeCallGraph(options,null);
       final PointerAnalysis<InstanceKey> pointerAnalysis = builder.getPointerAnalysis();
-      SDG<?> sdg = new SDG<>(cg, pointerAnalysis, InstanceKey.class, dOptions, cOptions);
+      SDGBuilder sdgBuilder = new SDGBuilder();
+      sdgBuilder.setCg(cg);
+      sdgBuilder.setPa(pointerAnalysis);
+      sdgBuilder.computeAndSetModRef(InstanceKey.class);
+      sdgBuilder.setdOptions(dOptions);
+      sdgBuilder.setcOptions(cOptions);
+      SDG<?> sdg = sdgBuilder.build();
       try {
         GraphIntegrity.check(sdg);
       } catch (UnsoundGraphException e1) {

@@ -25,6 +25,7 @@ import com.ibm.wala.ipa.modref.ExtendedHeapModel;
 import com.ibm.wala.ipa.modref.ModRef;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.SDGBuilder;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
 import com.ibm.wala.ipa.slicer.Statement;
@@ -65,7 +66,13 @@ public class CISlicer {
       throw new IllegalArgumentException("Heap data dependences requested in CISlicer!");
     }
 
-    SDG<InstanceKey> sdg = new SDG<>(cg, pa, modRef, dOptions, cOptions, null);
+    SDGBuilder<InstanceKey> sdgBuilder = new SDGBuilder<InstanceKey>();
+    sdgBuilder.setCg(cg);
+    sdgBuilder.setPa(pa);
+    sdgBuilder.setModRef(modRef);
+    sdgBuilder.setdOptions(dOptions);
+    sdgBuilder.setcOptions(cOptions);    
+    SDG<InstanceKey> sdg = sdgBuilder.build();
 
     Map<Statement, Set<PointerKey>> mod = scanForMod(sdg, pa, modRef);
     Map<Statement, Set<PointerKey>> ref = scanForRef(sdg, pa, modRef);

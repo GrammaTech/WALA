@@ -36,6 +36,7 @@ import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.ParamCallee;
 import com.ibm.wala.ipa.slicer.ParamCaller;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.SDGBuilder;
 import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
@@ -159,7 +160,13 @@ public class PDFSlice {
       // CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new
       // AnalysisCache(), cha, scope);
       CallGraph cg = builder.makeCallGraph(options, null);
-      SDG<InstanceKey> sdg = new SDG<>(cg, builder.getPointerAnalysis(), InstanceKey.class, dOptions, cOptions);
+      SDGBuilder<InstanceKey> sdgBuilder = new SDGBuilder<InstanceKey>();
+      sdgBuilder.setCg(cg);
+      sdgBuilder.setPa(builder.getPointerAnalysis());
+      sdgBuilder.computeAndSetModRef(InstanceKey.class);
+      sdgBuilder.setdOptions(dOptions);
+      sdgBuilder.setcOptions(cOptions);     
+      SDG<InstanceKey> sdg = sdgBuilder.build();
 
       // find the call statement of interest
       CGNode callerNode = SlicerTest.findMethod(cg, srcCaller);

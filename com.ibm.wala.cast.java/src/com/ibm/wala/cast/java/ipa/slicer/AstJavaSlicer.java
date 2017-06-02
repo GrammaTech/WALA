@@ -25,6 +25,7 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.SDGBuilder;
 import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Statement;
 import com.ibm.wala.ssa.IR;
@@ -110,7 +111,13 @@ public class AstJavaSlicer extends Slicer {
   public static Pair<Collection<Statement>, SDG<InstanceKey>> computeAssertionSlice(CallGraph CG, PointerAnalysis<InstanceKey> pa,
       Collection<CGNode> partialRoots, boolean multiThreadedCode) throws IllegalArgumentException, CancelException {
     CallGraph pcg = PartialCallGraph.make(CG, new LinkedHashSet<>(partialRoots));
-    SDG<InstanceKey> sdg = new SDG<>(pcg, pa, new AstJavaModRef<>(), DataDependenceOptions.FULL, ControlDependenceOptions.FULL);
+    SDGBuilder<InstanceKey> sdgBuilder = new SDGBuilder<InstanceKey>();
+    sdgBuilder.setCg(pcg);
+    sdgBuilder.setPa(pa);
+    sdgBuilder.setModRef(new AstJavaModRef<>());
+    sdgBuilder.setdOptions(DataDependenceOptions.FULL);
+    sdgBuilder.setcOptions(ControlDependenceOptions.FULL);
+    SDG<InstanceKey> sdg = sdgBuilder.build();
     //System.err.println(("SDG:\n" + sdg));
     Set<Statement> stmts = gatherAssertions(CG, partialRoots);
     if (multiThreadedCode) {

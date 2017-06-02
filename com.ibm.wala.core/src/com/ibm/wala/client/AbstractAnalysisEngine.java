@@ -35,6 +35,7 @@ import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.SDGBuilder;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
 import com.ibm.wala.ssa.DefaultIRFactory;
@@ -272,7 +273,13 @@ public abstract class AbstractAnalysisEngine<I extends InstanceKey> implements A
   }
 
   public SDG<I> getSDG(Class<I> instanceKeyClass, DataDependenceOptions data, ControlDependenceOptions ctrl) {
-    return new SDG<I>(getCallGraph(), getPointerAnalysis(), instanceKeyClass, data, ctrl);
+    SDGBuilder<I> sdgBuilder = new SDGBuilder<I>();
+    sdgBuilder.setCg(getCallGraph());
+    sdgBuilder.setPa(getPointerAnalysis());
+    sdgBuilder.computeAndSetModRef(instanceKeyClass);
+    sdgBuilder.setdOptions(data);
+    sdgBuilder.setcOptions(ctrl);
+    return sdgBuilder.build();
   }
   
   public String getExclusionsFile() {
