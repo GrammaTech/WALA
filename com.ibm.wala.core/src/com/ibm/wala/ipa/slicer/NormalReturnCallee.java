@@ -10,12 +10,14 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 
 /**
  * A {@link Statement} representing the normal return value in a callee,
  * immediately before returning to the caller.
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
 public class NormalReturnCallee extends Statement {
 
   public NormalReturnCallee(CGNode node) {

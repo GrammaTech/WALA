@@ -10,12 +10,14 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ssa.SSAPiInstruction;
 
 /**
  * identifier of a Pi instruction
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
 public class PiStatement extends Statement {
   private final SSAPiInstruction pi;
 

@@ -14,7 +14,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -29,7 +32,6 @@ import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
 import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.Heap;
-import com.ibm.wala.util.collections.Iterator2Collection;
 import com.ibm.wala.util.collections.MapUtil;
 import com.ibm.wala.util.collections.ToStringComparator;
 import com.ibm.wala.util.heapTrace.HeapTracer;
@@ -570,11 +572,9 @@ public class TabulationSolver<T, P, F> {
     // c:= number of the call node
     final int c = supergraph.getNumber(edge.target);
 
-    Collection<T> allReturnSites = HashSetFactory.make();
     // populate allReturnSites with return sites for missing calls.
-    for (Iterator<? extends T> it = supergraph.getReturnSites(edge.target, null); it.hasNext();) {
-      allReturnSites.add(it.next());
-    }
+    Collection<T> allReturnSites = supergraph.getReturnSitesAsSet(edge.target, null);
+
     // [14 - 16]
     boolean hasCallee = false;
     for (Iterator<? extends T> it = supergraph.getCalledNodes(edge.target); it.hasNext();) {
@@ -653,16 +653,17 @@ public class TabulationSolver<T, P, F> {
    * @param calleeEntry the entry node of the callee in question
    */
   @SuppressWarnings("unused")
-  protected void processParticularCallee(final PathEdge<T> edge, final int callNodeNum, Collection<T> allReturnSites, final T calleeEntry, final long timeout) {
+  protected void processParticularCallee(final PathEdge<T> edge, final int callNodeNum, Collection<T> allReturnSites,
+      final T calleeEntry, final long timeout) {
     if (DEBUG_LEVEL > 0) {
       System.err.println(" process callee: " + calleeEntry);
     }
     // reached := {d1} that reach the callee
     MutableSparseIntSet reached = MutableSparseIntSet.makeEmpty();
-    final Collection<T> returnSitesForCallee = Iterator2Collection.toSet(supergraph.getReturnSites(edge.target, supergraph
-        .getProcOf(calleeEntry)));
+    final Collection<T> returnSitesForCallee = supergraph.getReturnSitesAsSet(edge.target, supergraph.getProcOf(calleeEntry));
     allReturnSites.addAll(returnSitesForCallee);
-    // we modify this to handle each return site individually. Some types of problems
+    // we modify this to handle each return site individually. Some types of
+    // problems
     // compute different flow functions for each return site.
     for (final T returnSite : returnSitesForCallee) {
       IUnaryFlowFunction f = flowFunctionMap.getCallFlowFunction(edge.target, calleeEntry, returnSite);
@@ -671,7 +672,8 @@ public class TabulationSolver<T, P, F> {
         reached.addAll(r);
       }
     }
-    // in some problems, we also want to consider flow into a callee that can never flow out
+    // in some problems, we also want to consider flow into a callee that can
+    // never flow out
     // via a return. in this case, the return site is null.
     IUnaryFlowFunction f = flowFunctionMap.getCallFlowFunction(edge.target, calleeEntry, null);
     IntSet r = computeFlow(edge.d2, f);
@@ -702,11 +704,26 @@ public class TabulationSolver<T, P, F> {
           // handle summary edges now as well. this is different from the PoPL
           // 95 paper.
           if (summaries != null) {
-            // for each exit from the callee
             P p = supergraph.getProcOf(calleeEntry);
-            T[] exits = supergraph.getExitsForProcedure(p);
-            for (int e = 0; e < exits.length; e++) {
-              final T exit = exits[e];
+            // precompute map from exits to ret stmts in caller
+            // saves calls to hasEdge() for each exit-ret stmt pair
+            Map<T, List<T>> exitMap = new HashMap<T, List<T>>();
+            for (T returnSite : returnSitesForCallee) {
+              Iterator<T> preds = supergraph.getPredNodes(returnSite);
+              while (preds.hasNext()) {
+                T pred = preds.next();
+                if (supergraph.getProcOf(pred).equals(p) && supergraph.isExit(pred)) {
+                  List<T> current = exitMap.get(pred);
+                  if (current == null) {
+                    current = new LinkedList<T>();
+                    exitMap.put(pred, current);
+                  }
+                  current.add(returnSite);
+                }
+              }
+            }
+            // for each exit from the callee
+            for (final T exit : exitMap.keySet()) {
               if (DEBUG_LEVEL > 0) {
                 assert supergraph.containsNode(exit);
               }
@@ -715,46 +732,46 @@ public class TabulationSolver<T, P, F> {
               // was recorded as a summary edge
               IntSet reachedBySummary = summaries.getSummaryEdges(s_p_num, x_num, d1);
               if (reachedBySummary != null) {
-                for (final T returnSite : returnSitesForCallee) {
+                List<T> returnSitesForExit = exitMap.get(exit);
+                if (returnSitesForExit == null) {
+                  continue;
+                }
+                for (final T returnSite : returnSitesForExit) {
                   if (timedOut(timeout)) {
                     return;
                   }
-                  // if "exit" is a valid exit from the callee to the return
-                  // site being processed
-                  if (supergraph.hasEdge(exit, returnSite)) {
-                    final IFlowFunction retf = flowFunctionMap.getReturnFlowFunction(edge.target, exit, returnSite);
-                    reachedBySummary.foreach(new IntSetAction() {
-                      @Override
-                      public void act(final int d2) {
-                        assert curSummaryEdge == null : "curSummaryEdge should be null here";
-                        curSummaryEdge = PathEdge.createPathEdge(calleeEntry, d1, exit, d2);
-                        if (retf instanceof IBinaryReturnFlowFunction) {
-                          final IntSet D5 = computeBinaryFlow(edge.d2, d2, (IBinaryReturnFlowFunction) retf);
-                          if (D5 != null) {
-                            D5.foreach(new IntSetAction() {
-                              @Override
-                              public void act(int d5) {
-                                newSummaryEdge(edge, curSummaryEdge, returnSite, d5);
-                                propagate(edge.entry, edge.d1, returnSite, d5);
-                              }
-                            });
-                          }
-                        } else {
-                          final IntSet D5 = computeFlow(d2, (IUnaryFlowFunction) retf);
-                          if (D5 != null) {
-                            D5.foreach(new IntSetAction() {
-                              @Override
-                              public void act(int d5) {
-                                newSummaryEdge(edge, curSummaryEdge, returnSite, d5);
-                                propagate(edge.entry, edge.d1, returnSite, d5);
-                              }
-                            });
-                          }
+                  final IFlowFunction retf = flowFunctionMap.getReturnFlowFunction(edge.target, exit, returnSite);
+                  reachedBySummary.foreach(new IntSetAction() {
+                    @Override
+                    public void act(final int d2) {
+                      assert curSummaryEdge == null : "curSummaryEdge should be null here";
+                      curSummaryEdge = PathEdge.createPathEdge(calleeEntry, d1, exit, d2);
+                      if (retf instanceof IBinaryReturnFlowFunction) {
+                        final IntSet D5 = computeBinaryFlow(edge.d2, d2, (IBinaryReturnFlowFunction) retf);
+                        if (D5 != null) {
+                          D5.foreach(new IntSetAction() {
+                            @Override
+                            public void act(int d5) {
+                              newSummaryEdge(edge, curSummaryEdge, returnSite, d5);
+                              propagate(edge.entry, edge.d1, returnSite, d5);
+                            }
+                          });
                         }
-                        curSummaryEdge = null;
+                      } else {
+                        final IntSet D5 = computeFlow(d2, (IUnaryFlowFunction) retf);
+                        if (D5 != null) {
+                          D5.foreach(new IntSetAction() {
+                            @Override
+                            public void act(int d5) {
+                              newSummaryEdge(edge, curSummaryEdge, returnSite, d5);
+                              propagate(edge.entry, edge.d1, returnSite, d5);
+                            }
+                          });
+                        }
                       }
-                    });
-                  }
+                      curSummaryEdge = null;
+                    }
+                  });
                 }
               }
             }

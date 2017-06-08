@@ -11,6 +11,7 @@
 package com.ibm.wala.dataflow.IFDS;
 
 import java.util.Iterator;
+import java.util.Set;
 
 import com.ibm.wala.util.graph.Graph;
 import com.ibm.wala.util.graph.NumberedGraph;
@@ -66,6 +67,14 @@ public interface ISupergraph<T, P> extends NumberedGraph<T> {
    * @return the corresponding return nodes. There may be many, because of exceptional control flow.
    */
   Iterator<? extends T> getReturnSites(T call, P callee);
+  
+  /**
+   * Set version of the above method, to avoid converting from sets to iterators
+   * and back again in certain cases.
+   * 
+   * @param ret
+   */
+  Set<T> getReturnSitesAsSet(T call, P callee);
 
   /**
    * @param r a "return" node in the supergraph
@@ -73,7 +82,15 @@ public interface ISupergraph<T, P> extends NumberedGraph<T> {
    * @return the corresponding call nodes. There may be many.
    */
   Iterator<? extends T> getCallSites(T ret, P callee);
-
+  
+  /**
+   * Set version of the above method, to avoid converting from sets to iterators
+   * and back again in certain cases.
+   * 
+   * @param ret
+   */
+  Set<T> getCallSitesAsSet(T ret, P callee);
+  
   /**
    * @param n a node in the supergraph
    * @return true iff this node is an exit node

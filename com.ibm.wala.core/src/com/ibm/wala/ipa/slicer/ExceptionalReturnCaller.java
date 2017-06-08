@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 
@@ -17,6 +18,7 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
  * A {@link Statement} representing the exceptional return value in a caller,
  * immediately after returning to the caller.
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.CallSiteStatementSerializer.class)
 public class ExceptionalReturnCaller extends StatementWithInstructionIndex implements ValueNumberCarrier {
 
   public ExceptionalReturnCaller(CGNode node, int callIndex) {

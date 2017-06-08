@@ -10,12 +10,14 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 
 /**
  * A {@link Statement} representing method exit used as a dummy exit for starting propagation to a seed statement in backwards
  * slicing.
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
 public class MethodExitStatement extends Statement {
 
   public MethodExitStatement(CGNode node) {

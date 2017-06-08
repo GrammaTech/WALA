@@ -73,4 +73,8 @@ Export-Package: .,
  com.ibm.wala.viz.viewer
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Eclipse-BuddyPolicy: registered
-Bundle-ClassPath: .
+Bundle-ClassPath: .,
+ lib/jackson-core-2.8.6.jar,
+ lib/jackson-databind-2.8.6.jar,
+ lib/jackson-annotations-2.8.6.jar,
+ lib/guava-21.0.jar

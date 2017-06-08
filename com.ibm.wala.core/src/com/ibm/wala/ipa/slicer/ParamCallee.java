@@ -10,11 +10,13 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 
 /**
  * A {@link Statement} representing a formal parameter
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
 public class ParamCallee extends Statement implements ValueNumberCarrier {
   /**
    * Value number of the parameter

@@ -12,33 +12,41 @@ package com.ibm.wala.ipa.slicer;
 
 import com.ibm.wala.dataflow.IFDS.IFlowFunction;
 import com.ibm.wala.dataflow.IFDS.IPartiallyBalancedFlowFunctions;
+import com.ibm.wala.dataflow.IFDS.ISDGSupergraph;
 import com.ibm.wala.dataflow.IFDS.IUnaryFlowFunction;
 import com.ibm.wala.dataflow.IFDS.IdentityFlowFunction;
+import com.ibm.wala.ipa.slicer.Statement.Kind;
 import com.ibm.wala.util.debug.Assertions;
 
 /**
  * flow functions for flow-sensitive context-sensitive slicer
+ * 
+ * @param <T>
+ *          a type that corresponds to a Statement, typically either a Statement
+ *          or a Long
  */
-public class SliceFunctions implements IPartiallyBalancedFlowFunctions<Statement> {
-  
-  private ReachabilityFunctions<Statement> reachabilityFunctions;
-  
-  public SliceFunctions(){
+public class SliceFunctions<T> implements IPartiallyBalancedFlowFunctions<T> {
+
+  private ReachabilityFunctions<T> reachabilityFunctions;
+  private ISDGSupergraph<T, ?> supergraph;
+
+  public SliceFunctions(ISDGSupergraph<T, ?> supergraph) {
     reachabilityFunctions = ReachabilityFunctions.createReachabilityFunctions();
+    this.supergraph = supergraph;
   }
 
   @Override
-  public IUnaryFlowFunction getCallFlowFunction(Statement src, Statement dest, Statement ret) {
+  public IUnaryFlowFunction getCallFlowFunction(T src, T dest, T ret) {
     return reachabilityFunctions.getCallFlowFunction(src, dest, ret);
   }
 
   @Override
-  public IUnaryFlowFunction getCallNoneToReturnFlowFunction(Statement src, Statement dest) {
+  public IUnaryFlowFunction getCallNoneToReturnFlowFunction(T src, T dest) {
     if (src == null) {
       throw new IllegalArgumentException("src is null");
     }
-    Statement s = src;
-    switch (s.getKind()) {
+    T s = src;
+    switch (supergraph.getKind(s)) {
     case NORMAL_RET_CALLER:
     case PARAM_CALLER:
     case EXC_RET_CALLER:
@@ -48,10 +56,10 @@ public class SliceFunctions implements IPartiallyBalancedFlowFunctions<Statement
     case HEAP_PARAM_CALLER:
     case HEAP_RET_CALLEE:
     case HEAP_RET_CALLER:
-      if (dest instanceof HeapStatement) {
-        HeapStatement hd = (HeapStatement) dest;
-        HeapStatement hs = (HeapStatement) src;
-        if (hs.getLocation().equals(hd.getLocation())) {
+      Kind destKind = supergraph.getKind(dest);
+      if (destKind.equals(Kind.HEAP_PARAM_CALLEE) || destKind.equals(Kind.HEAP_PARAM_CALLER)
+          || destKind.equals(Kind.HEAP_RET_CALLEE) || destKind.equals(Kind.HEAP_RET_CALLER)) {
+        if (supergraph.haveSameLocation(src, dest)) {
           return IdentityFlowFunction.identity();
         } else {
           return ReachabilityFunctions.KILL_FLOW;
@@ -64,32 +72,32 @@ public class SliceFunctions implements IPartiallyBalancedFlowFunctions<Statement
       // this control dependence does not flow back to the caller.
       return ReachabilityFunctions.KILL_FLOW;
     default:
-      Assertions.UNREACHABLE(s.getKind().toString());
+      Assertions.UNREACHABLE(supergraph.getKind(s).toString());
       return null;
     }
   }
 
   @Override
-  public IUnaryFlowFunction getCallToReturnFlowFunction(Statement src, Statement dest) {
+  public IUnaryFlowFunction getCallToReturnFlowFunction(T src, T dest) {
     return reachabilityFunctions.getCallToReturnFlowFunction(src, dest);
   }
 
   @Override
-  public IUnaryFlowFunction getNormalFlowFunction(Statement src, Statement dest) {
+  public IUnaryFlowFunction getNormalFlowFunction(T src, T dest) {
     return reachabilityFunctions.getNormalFlowFunction(src, dest);
   }
 
   @Override
-  public IFlowFunction getReturnFlowFunction(Statement call, Statement src, Statement dest) {
+  public IFlowFunction getReturnFlowFunction(T call, T src, T dest) {
     return reachabilityFunctions.getReturnFlowFunction(call, src, dest);
   }
 
-  public IFlowFunction getReturnFlowFunction(Statement src, Statement dest) {
+  public IFlowFunction getReturnFlowFunction(T src, T dest) {
     return reachabilityFunctions.getReturnFlowFunction(src, dest);
   }
 
   @Override
-  public IFlowFunction getUnbalancedReturnFlowFunction(Statement src, Statement dest) {
+  public IFlowFunction getUnbalancedReturnFlowFunction(T src, T dest) {
     return getReturnFlowFunction(src, dest);
   }
 

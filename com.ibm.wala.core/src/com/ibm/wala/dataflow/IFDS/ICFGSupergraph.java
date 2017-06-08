@@ -22,6 +22,7 @@
 package com.ibm.wala.dataflow.IFDS;
 
 import java.util.Iterator;
+import java.util.Set;
 
 import com.ibm.wala.cfg.ControlFlowGraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
@@ -36,6 +37,7 @@ import com.ibm.wala.ssa.analysis.IExplodedBasicBlock;
 import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.collections.EmptyIterator;
 import com.ibm.wala.util.collections.FilterIterator;
+import com.ibm.wala.util.collections.Iterator2Collection;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.Graph;
 import com.ibm.wala.util.intset.IntSet;
@@ -310,6 +312,18 @@ public class ICFGSupergraph implements ISupergraph<BasicBlockInContext<IExploded
   @Override
   public String toString() {
     return icfg.toString();
+  }
+
+  @Override
+  public Set<BasicBlockInContext<IExplodedBasicBlock>> getCallSitesAsSet(BasicBlockInContext<IExplodedBasicBlock> ret,
+      CGNode callee) {
+    return Iterator2Collection.toSet(getCallSites(ret, callee));
+  }
+
+  @Override
+  public Set<BasicBlockInContext<IExplodedBasicBlock>> getReturnSitesAsSet(BasicBlockInContext<IExplodedBasicBlock> call,
+      CGNode callee) {
+    return Iterator2Collection.toSet(getReturnSites(call, callee));
   }
 
 }

@@ -10,10 +10,12 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.HeapStatementSerializer.class)
 public abstract class HeapStatement extends Statement {
 
   private final PointerKey loc;
@@ -27,7 +29,6 @@ public abstract class HeapStatement extends Statement {
     }
     this.loc = loc;
   }
-
 
   public final static class HeapParamCaller extends HeapStatement {
     // index into the IR instruction array of the call statements
@@ -76,7 +77,7 @@ public abstract class HeapStatement extends Statement {
       }
     }
   }
-
+  
   public final static class HeapParamCallee extends HeapStatement {
       
     private Integer hashCode = null;

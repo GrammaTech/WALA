@@ -11,11 +11,13 @@
 package com.ibm.wala.ipa.slicer;
 
 import java.util.Iterator;
+import java.util.Set;
 
-import com.ibm.wala.dataflow.IFDS.ISupergraph;
+import com.ibm.wala.dataflow.IFDS.ISDGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
+import com.ibm.wala.ipa.slicer.Statement.Kind;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.collections.EmptyIterator;
@@ -27,7 +29,7 @@ import com.ibm.wala.util.intset.IntSet;
 /**
  * A wrapper around an SDG to make it look like a supergraph for tabulation.
  */
-class SDGSupergraph implements ISupergraph<Statement, PDG<? extends InstanceKey>> {
+public class SDGSupergraph implements ISDGSupergraph<Statement, PDG<? extends InstanceKey>> {
 
   private final ISDG sdg;
 
@@ -66,24 +68,29 @@ class SDGSupergraph implements ISupergraph<Statement, PDG<? extends InstanceKey>
    */
   @Override
   public Iterator<? extends Statement> getCallSites(Statement r, PDG<? extends InstanceKey> callee) {
+    return getCallSitesAsSet(r, callee).iterator();
+  }
+  
+  @Override
+  public Set<Statement> getCallSitesAsSet(Statement r, PDG<? extends InstanceKey> callee) {
     switch (r.getKind()) {
     case EXC_RET_CALLER: {
       ExceptionalReturnCaller n = (ExceptionalReturnCaller) r;
       SSAAbstractInvokeInstruction call = n.getInstruction();
       PDG<?> pdg = getProcOf(r);
-      return pdg.getCallStatements(call).iterator();
+      return pdg.getCallStatements(call);
     }
     case NORMAL_RET_CALLER: {
       NormalReturnCaller n = (NormalReturnCaller) r;
       SSAAbstractInvokeInstruction call = n.getInstruction();
       PDG<?> pdg = getProcOf(r);
-      return pdg.getCallStatements(call).iterator();
+      return pdg.getCallStatements(call);
     }
     case HEAP_RET_CALLER: {
       HeapStatement.HeapReturnCaller n = (HeapStatement.HeapReturnCaller) r;
       SSAAbstractInvokeInstruction call = n.getCall();
       PDG<?> pdg = getProcOf(r);
-      return pdg.getCallStatements(call).iterator();
+      return pdg.getCallStatements(call);
     }
     default:
       Assertions.UNREACHABLE(r.getKind().toString());
@@ -195,24 +202,30 @@ class SDGSupergraph implements ISupergraph<Statement, PDG<? extends InstanceKey>
    */
   @Override
   public Iterator<? extends Statement> getReturnSites(Statement call, PDG<? extends InstanceKey> callee) {
+      return getReturnSitesAsSet(call, callee).iterator();
+  }
+
+  
+  @Override
+  public Set<Statement> getReturnSitesAsSet(Statement call, PDG<? extends InstanceKey> callee) {
     switch (call.getKind()) {
     case PARAM_CALLER: {
       ParamCaller n = (ParamCaller) call;
       SSAAbstractInvokeInstruction st = n.getInstruction();
       PDG<?> pdg = getProcOf(call);
-      return pdg.getCallerReturnStatements(st).iterator();
+      return pdg.getCallerReturnStatements(st);
     }
     case HEAP_PARAM_CALLER: {
       HeapStatement.HeapParamCaller n = (HeapStatement.HeapParamCaller) call;
       SSAAbstractInvokeInstruction st = n.getCall();
       PDG<?> pdg = getProcOf(call);
-      return pdg.getCallerReturnStatements(st).iterator();
+      return pdg.getCallerReturnStatements(st);
     }
     case NORMAL: {
       NormalStatement n = (NormalStatement) call;
       SSAAbstractInvokeInstruction st = (SSAAbstractInvokeInstruction) n.getInstruction();
       PDG<?> pdg = getProcOf(call);
-      return pdg.getCallerReturnStatements(st).iterator();
+      return pdg.getCallerReturnStatements(st);
     }
     default:
       Assertions.UNREACHABLE(call.getKind().toString());
@@ -275,6 +288,7 @@ class SDGSupergraph implements ISupergraph<Statement, PDG<? extends InstanceKey>
     case HEAP_RET_CALLEE:
     case NORMAL_RET_CALLEE:
     case CATCH:
+    case METHOD_EXIT:
       return false;
     default:
       Assertions.UNREACHABLE(n.toString());
@@ -327,6 +341,7 @@ class SDGSupergraph implements ISupergraph<Statement, PDG<? extends InstanceKey>
     case PHI:
     case PI:
     case METHOD_ENTRY:
+    case METHOD_EXIT:
     case CATCH:
       return false;
     default:
@@ -458,6 +473,31 @@ class SDGSupergraph implements ISupergraph<Statement, PDG<? extends InstanceKey>
   @Override
   public IntSet getSuccNodeNumbers(Statement node) {
     return sdg.getSuccNodeNumbers(node);
+  }
+
+  @Override
+  public Statement getMethodExitNodeForStatement(Statement s) {
+    return new MethodExitStatement(s.getNode());
+  }
+
+  @Override
+  public Statement getMethodEntryNodeForStatement(Statement s) {
+    return new MethodEntryStatement(s.getNode());
+  }
+
+  @Override
+  public Kind getKind(Statement s) {
+    return s.getKind();
+  }
+
+  @Override
+  public boolean haveSameLocation(Statement first, Statement second) {
+    if (!(first instanceof HeapStatement) || !(second instanceof HeapStatement)) {
+      throw new IllegalArgumentException("One or both args are not HeapStatements: " + first + "  " + second);
+    }
+    HeapStatement hf = (HeapStatement) first;
+    HeapStatement hs = (HeapStatement) second;
+    return hf.getLocation().equals(hs.getLocation());
   }
 
 }

@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 
 /**
@@ -17,6 +18,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
  * 
  * This is also used as a dummy entry for starting propagation to a seed statement.
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.DefaultStatementSerializer.class)
 public class MethodEntryStatement extends Statement {
 
   public MethodEntryStatement(CGNode node) {

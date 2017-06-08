@@ -48,6 +48,7 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.slicer.MethodEntryStatement;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.SDG;
+import com.ibm.wala.ipa.slicer.SDGBuilder;
 import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
@@ -758,7 +759,13 @@ public class SlicerTest {
 
     CallGraphBuilder builder = Util.makeZeroOneCFABuilder(options, new AnalysisCacheImpl(), cha, scope);
     CallGraph cg = builder.makeCallGraph(options, null);
-    SDG<?> sdg = new SDG<>(cg, builder.getPointerAnalysis(), InstanceKey.class, DataDependenceOptions.NO_BASE_NO_HEAP, ControlDependenceOptions.FULL);
+    SDGBuilder sdgBuilder = new SDGBuilder();
+    sdgBuilder.setCg(cg);
+    sdgBuilder.setPa(builder.getPointerAnalysis());
+    sdgBuilder.computeAndSetModRef(InstanceKey.class);
+    sdgBuilder.setdOptions(DataDependenceOptions.NO_BASE_NO_HEAP);
+    sdgBuilder.setcOptions(ControlDependenceOptions.FULL);
+    SDG<?> sdg = sdgBuilder.build();
     GraphIntegrity.check(sdg);
   }
 

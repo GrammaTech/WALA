@@ -10,11 +10,13 @@
  *******************************************************************************/
 package com.ibm.wala.ipa.slicer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.ibm.wala.ipa.callgraph.CGNode;
 
 /**
  * A statement that has a corresponding index in the SSA IR
  */
+@JsonSerialize(using=com.ibm.wala.ipa.slicer.json.NormalStatementSerializer.class)
 public class NormalStatement extends StatementWithInstructionIndex {
 
   public NormalStatement(CGNode node, int instructionIndex) {
