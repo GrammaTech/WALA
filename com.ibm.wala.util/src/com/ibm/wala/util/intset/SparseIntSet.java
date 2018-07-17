@@ -468,7 +468,7 @@ public class SparseIntSet implements IntSet {
     SparseIntSet result = new SparseIntSet(s.size + 1);
     int k = 0;
     int m = 0;
-    while (k < s.elements.length && s.elements[k] < j) {
+    while (k < s.size && s.elements[k] < j) {
       result.elements[k++] = s.elements[m++];
     }
     if (k == s.size) {
