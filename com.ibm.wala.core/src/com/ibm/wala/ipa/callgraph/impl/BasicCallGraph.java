@@ -45,7 +45,7 @@ public abstract class BasicCallGraph<T> extends AbstractNumberedGraph<CGNode> im
 
   private static final boolean DEBUG = false;
 
-  private final DelegatingNumberedNodeManager<CGNode> nodeManager = new DelegatingNumberedNodeManager<CGNode>();
+  protected final DelegatingNumberedNodeManager<CGNode> nodeManager = new DelegatingNumberedNodeManager<CGNode>();
 
   /**
    * A fake root node for the graph

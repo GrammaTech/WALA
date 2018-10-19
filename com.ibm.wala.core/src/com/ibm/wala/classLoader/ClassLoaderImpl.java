@@ -242,58 +242,45 @@ public class ClassLoaderImpl implements IClassLoader {
    * Set up the set of classes loaded by this object.
    */
   @SuppressWarnings("unused")
-  private void loadAllClasses(Collection<ModuleEntry> moduleEntries, Map<String, Object> fileContents) {
+  private void loadAllClasses(Collection<ModuleEntry> moduleEntries) {
     for (Iterator<ModuleEntry> it = moduleEntries.iterator(); it.hasNext();) {
       ModuleEntry entry = it.next();
       if (!entry.isClassFile()) {
         continue;
       }
-
       String className = entry.getClassName().replace('.', '/');
-
       if (DEBUG_LEVEL > 0) {
         System.err.println("Consider " + className);
       }
-
-      if (exclusions != null && exclusions.contains(className)) {
-        if (DEBUG_LEVEL > 0) {
-          System.err.println("Excluding " + className);
-        }
-        continue;
-      }
-
-      ShrikeClassReaderHandle entryReader = new ShrikeClassReaderHandle(entry);
-
-      className = "L" + className;
-      if (DEBUG_LEVEL > 0) {
-        System.err.println("Load class " + className);
-      }
       try {
-        TypeName T = TypeName.string2TypeName(className);
-        if (loadedClasses.get(T) != null) {
+        ShrikeClassReaderHandle entryReader = new ShrikeClassReaderHandle(entry);
+        String classNameInternal = entryReader.get().getName();
+        if (DEBUG_LEVEL > 0) {
+          System.err.println("Load class " + classNameInternal);
+        }
+        if (exclusions != null && exclusions.contains(classNameInternal)) {
+          if (DEBUG_LEVEL > 0) {
+            System.err.println("Excluding " + classNameInternal);
+          }
+          continue;
+        }
+        // if the internal name does not correspond to the path we add a warning but still add the class
+        if (!classNameInternal.equals(className)) {
+          Warnings.add(InvalidClassFile.create(className));
+        }
+        classNameInternal = "L" + classNameInternal;
+        TypeName internalT = TypeName.string2TypeName(classNameInternal);
+        // add the class if it is not present yet
+        if (loadedClasses.get(internalT) != null) {
           Warnings.add(MultipleImplementationsWarning.create(className));
-        } else if (parent != null && parent.lookupClass(T) != null) {
+        } else if (parent != null && parent.lookupClass(internalT) != null) {
           Warnings.add(MultipleImplementationsWarning.create(className));
         } else {
-          // try to read from memory
-          ShrikeClassReaderHandle reader = entryReader;
-          if (fileContents != null) {
-            final Object contents = fileContents.get(entry.getName());
-            if (contents != null) {
-              // reader that uses the in-memory bytes
-              reader = new ByteArrayReaderHandle(entry, (byte[]) contents);
-            }
-          }
-          ShrikeClass tmpKlass = new ShrikeClass(reader, this, cha);
-          if (tmpKlass.getReference().getName().equals(T)) {
-            // always used the reader based on the entry after this point,
-            // so we can null out and re-read class file contents
-            loadedClasses.put(T, new ShrikeClass(entryReader, this, cha));
-            if (DEBUG_LEVEL > 1) {
-              System.err.println("put " + T + " ");
-            }
-          } else {
-            Warnings.add(InvalidClassFile.create(className));
+          // always used the reader based on the entry after this point,
+          // so we can null out and re-read class file contents
+          loadedClasses.put(internalT, new ShrikeClass(entryReader, this, cha));
+          if (DEBUG_LEVEL > 1) {
+            System.err.println("put " + internalT + " ");
           }
         }
       } catch (InvalidClassFileException e) {
@@ -523,7 +510,7 @@ public class ClassLoaderImpl implements IClassLoader {
         // }
         // jarFileContents = null;
       }
-      loadAllClasses(classFiles, allClassAndSourceFileContents);
+      loadAllClasses(classFiles);
       loadAllSources(sourceFiles);
       for (Iterator<ModuleEntry> it2 = classFiles.iterator(); it2.hasNext();) {
         ModuleEntry file = it2.next();
